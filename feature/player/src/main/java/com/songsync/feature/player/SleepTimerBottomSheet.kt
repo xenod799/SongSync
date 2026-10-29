@@ -46,7 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.songsync.core.ui.theme.SongSyncTheme
-import com.songsync.media.SleepTimerManager
+import com.songsync.media.player.SleepTimerManager
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)

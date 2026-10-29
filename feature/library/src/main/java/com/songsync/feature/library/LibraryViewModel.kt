@@ -14,6 +14,7 @@ import com.songsync.core.domain.repository.PlaylistRepository
 import com.songsync.core.domain.repository.SettingsRepository
 import com.songsync.core.domain.repository.SongRepository
 import com.songsync.media.player.PlayerConnection
+import com.songsync.media.scanner.MediaStoreScanner
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -63,6 +64,7 @@ class LibraryViewModel @Inject constructor(
     private val songRepository: SongRepository,
     private val playlistRepository: PlaylistRepository,
     private val settingsRepository: SettingsRepository,
+    private val scanner: MediaStoreScanner,
     val playerConnection: PlayerConnection
 ) : ViewModel() {
 
@@ -165,6 +167,67 @@ class LibraryViewModel @Inject constructor(
                     settingsRepository.setArtistGrid(!uiState.value.isArtistGrid)
                 }
             }
+        }
+    }
+
+    fun refreshLibrary() {
+        viewModelScope.launch {
+            _isScanning.value = true
+            _scanProgress.value = 0
+            try {
+                scanner.scanAndSync { progress ->
+                    _scanProgress.value = progress
+                }
+            } catch (_: Exception) {
+            } finally {
+                _isScanning.value = false
+            }
+        }
+    }
+
+    fun createPlaylist(name: String, songIds: List<Long> = emptyList()) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch {
+            val playlistId = playlistRepository.createPlaylist(trimmed)
+            if (songIds.isNotEmpty()) {
+                playlistRepository.addSongsToPlaylist(playlistId, songIds)
+            }
+        }
+    }
+
+    fun renamePlaylist(playlistId: Long, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch {
+            playlistRepository.renamePlaylist(playlistId, trimmed)
+        }
+    }
+
+    fun deletePlaylist(playlistId: Long) {
+        viewModelScope.launch {
+            playlistRepository.deletePlaylist(playlistId)
+        }
+    }
+
+    fun duplicatePlaylist(playlistId: Long, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch {
+            playlistRepository.duplicatePlaylist(playlistId, trimmed)
+        }
+    }
+
+    fun exportM3u(playlistId: Long) {
+        viewModelScope.launch {
+            playlistRepository.exportM3uPlaylist(playlistId)
+        }
+    }
+
+    fun addSongsToPlaylist(playlistId: Long, songIds: List<Long>) {
+        if (songIds.isEmpty()) return
+        viewModelScope.launch {
+            playlistRepository.addSongsToPlaylist(playlistId, songIds)
         }
     }
 

@@ -208,12 +208,7 @@ class MediaStoreScanner @Inject constructor(
                 sampleRate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)?.toIntOrNull() ?: 44100
             }
 
-            // Extract ReplayGain tag comments if present
-            val comment = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_COMMENT)
-            if (!comment.isNullOrBlank()) {
-                trackGain = parseReplayGainTag(comment, "REPLAYGAIN_TRACK_GAIN")
-                trackPeak = parseReplayGainTag(comment, "REPLAYGAIN_TRACK_PEAK")
-            }
+            // ReplayGain tag comments are not exposed by MediaMetadataRetriever; skip extraction
         } catch (_: Exception) {
             // Unreadable or corrupted audio file
         } finally {
@@ -223,9 +218,4 @@ class MediaStoreScanner @Inject constructor(
         return AudioExtras(trackGain, trackPeak, genre, bitrate, sampleRate)
     }
 
-    private fun parseReplayGainTag(comment: String, tag: String): Float? {
-        val regex = Regex("$tag[=:]\\s*([+-]?[0-9.]+)", RegexOption.IGNORE_CASE)
-        val match = regex.find(comment)
-        return match?.groupValues?.get(1)?.toFloatOrNull()
     }
-}

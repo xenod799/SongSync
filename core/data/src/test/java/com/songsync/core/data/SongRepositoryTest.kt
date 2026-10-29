@@ -1,22 +1,25 @@
 package com.songsync.core.data
 
-import com.songsync.core.data.database.dao.SongDao
-import com.songsync.core.data.database.entity.SongEntity
-import com.songsync.core.data.mapper.toDomainModel
+import android.net.Uri
+import com.songsync.core.data.local.db.dao.SongDao
+import com.songsync.core.data.local.db.entity.SongEntity
 import com.songsync.core.data.repository.SongRepositoryImpl
-import com.songsync.core.domain.model.SortField
+import com.songsync.core.domain.model.SortBy
 import com.songsync.core.domain.model.SortOrder
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 
 class SongRepositoryTest {
 
@@ -26,46 +29,59 @@ class SongRepositoryTest {
 
     @Before
     fun setup() {
-        songDao = mock(SongDao::class.java)
-        repository = SongRepositoryImpl(songDao, testDispatcher)
+        mockkStatic(Uri::class)
+        every { Uri.parse(any()) } returns mockk(relaxed = true)
+
+        songDao = mockk(relaxed = true)
+        repository = SongRepositoryImpl(songDao)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Uri::class)
     }
 
     @Test
     fun getSongs_mapsEntitiesToDomainModelsCorrectly() = runTest(testDispatcher) {
         val testEntity = SongEntity(
             id = 101L,
+            mediaStoreId = 1001L,
             title = "Test Track",
-            artist = "Test Artist",
             artistId = 1L,
-            album = "Test Album",
+            artistName = "Test Artist",
             albumId = 2L,
-            duration = 180000L,
+            albumName = "Test Album",
+            durationMs = 180000L,
+            contentUriString = "content://media/external/audio/media/1001",
+            albumArtUriString = "content://media/external/audio/albumart/2",
+            dataPath = "/storage/emulated/0/Music/track.mp3",
             trackNumber = 1,
             year = 2024,
             genre = "Rock",
-            data = "/storage/emulated/0/Music/track.mp3",
-            size = 5000000L,
-            dateAdded = 1700000000L,
-            dateModified = 1700001000L,
+            sizeBytes = 5000000L,
+            mimeType = "audio/mpeg",
+            bitrate = 320000,
+            sampleRate = 44100,
+            dateAddedSec = 1700000000L,
+            dateModifiedSec = 1700001000L,
             isFavorite = true,
             playCount = 5,
-            lastPlayedTimestamp = 1700002000L,
-            albumArtUri = "content://media/external/audio/albumart/2",
-            replayGainTrackGain = -3.5f,
+            lastPlayedTimestampMs = 1700002000L,
+            replayGainTrackGainDb = -3.5f,
             replayGainTrackPeak = 0.98f
         )
 
-        `when`(songDao.getAllSongs()).thenReturn(flowOf(listOf(testEntity)))
+        every { songDao.getAllSongsByTitleAsc() } returns flowOf(listOf(testEntity))
 
-        val songs = repository.getSongs(SortOrder(SortField.TITLE, true)).first()
+        val songs = repository.getSongs(SortOrder(SortBy.TITLE, true)).first()
 
         assertEquals(1, songs.size)
         val song = songs.first()
         assertEquals(101L, song.id)
         assertEquals("Test Track", song.title)
-        assertEquals("Test Artist", song.artist)
-        assertEquals("Test Album", song.album)
-        assertEquals(180000L, song.duration)
+        assertEquals("Test Artist", song.artistName)
+        assertEquals("Test Album", song.albumName)
+        assertEquals(180000L, song.durationMs)
         assertTrue(song.isFavorite)
         assertEquals(5, song.playCount)
     }
@@ -75,15 +91,15 @@ class SongRepositoryTest {
         repository.toggleFavorite(101L, true)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        verify(songDao).updateFavorite(101L, true)
+        coVerify { songDao.updateFavorite(101L, true) }
     }
 
     @Test
-    fun incrementPlayCount_invokesDaoWithCurrentTimestamp() = runTest(testDispatcher) {
+    fun recordSongPlay_invokesDaoWithCurrentTimestamp() = runTest(testDispatcher) {
         val timestamp = 1700005000L
-        repository.incrementPlayCount(101L, timestamp)
+        repository.recordSongPlay(101L, timestamp)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        verify(songDao).incrementPlayCount(101L, timestamp)
+        coVerify { songDao.incrementPlayCount(101L, timestamp) }
     }
 }

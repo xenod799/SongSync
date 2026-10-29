@@ -1,7 +1,6 @@
 package com.songsync.feature.library.tageditor
 
 import android.app.Activity
-import android.content.ContentUris
 import android.content.ContentValues
 import android.os.Build
 import android.provider.MediaStore
@@ -66,11 +65,11 @@ fun TagEditorBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var title by remember { mutableStateOf(song.title) }
-    var artist by remember { mutableStateOf(song.artist) }
-    var album by remember { mutableStateOf(song.album) }
+    var artist by remember { mutableStateOf(song.artistName) }
+    var album by remember { mutableStateOf(song.albumName) }
     var genre by remember { mutableStateOf(song.genre ?: "") }
-    var year by remember { mutableStateOf(if (song.year != null && song.year > 0) song.year.toString() else "") }
-    var trackNumber by remember { mutableStateOf(if (song.trackNumber != null && song.trackNumber > 0) song.trackNumber.toString() else "") }
+    var year by remember { mutableStateOf(if (song.year > 0) song.year.toString() else "") }
+    var trackNumber by remember { mutableStateOf(if (song.trackNumber > 0) song.trackNumber.toString() else "") }
 
     var isSaving by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
@@ -80,15 +79,12 @@ fun TagEditorBottomSheet(
             isSaving = true
             try {
                 withContext(Dispatchers.IO) {
-                    val uri = ContentUris.withAppendedId(
-                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                        song.id
-                    )
+                    val uri = song.contentUri
                     val values = ContentValues().apply {
                         put(MediaStore.Audio.Media.TITLE, title.trim())
                         put(MediaStore.Audio.Media.ARTIST, artist.trim())
                         put(MediaStore.Audio.Media.ALBUM, album.trim())
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                             put(MediaStore.Audio.Media.GENRE, genre.trim())
                         }
                         year.toIntOrNull()?.let {
@@ -123,13 +119,9 @@ fun TagEditorBottomSheet(
 
     fun initiateSave() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val uri = ContentUris.withAppendedId(
-                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                song.id
-            )
             val writeRequest = MediaStore.createWriteRequest(
                 context.contentResolver,
-                listOf(uri)
+                listOf(song.contentUri)
             )
             writeRequestLauncher.launch(
                 IntentSenderRequest.Builder(writeRequest.intentSender).build()

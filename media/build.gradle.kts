@@ -32,6 +32,7 @@ dependencies {
     implementation(project(":core:data"))
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.datastore.preferences)
 
     // Media3
     implementation(libs.androidx.media3.exoplayer)

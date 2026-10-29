@@ -9,6 +9,7 @@ import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
+import androidx.media3.common.PlaybackParameters
 import com.songsync.core.domain.model.ArtShape
 import com.songsync.core.domain.model.Lyrics
 import com.songsync.core.domain.model.Song
@@ -17,7 +18,9 @@ import com.songsync.core.domain.repository.PlaylistRepository
 import com.songsync.core.domain.repository.SettingsRepository
 import com.songsync.core.domain.repository.SongRepository
 import com.songsync.media.player.PlaybackState
+import com.songsync.media.player.SleepTimerManager
 import com.songsync.media.player.PlayerConnection
+import com.songsync.media.player.EqualizerManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -48,17 +52,29 @@ data class PlayerUiState(
 class PlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     val playerConnection: PlayerConnection,
+    val sleepTimerManager: SleepTimerManager,
+    val equalizerManager: EqualizerManager,
     private val songRepository: SongRepository,
     private val lyricsRepository: LyricsRepository,
     private val playlistRepository: PlaylistRepository,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
+    val playbackState: StateFlow<PlaybackState> = playerConnection.playbackState
+
     private val _artworkColor = MutableStateFlow<Int?>(null)
     val artworkColor: StateFlow<Int?> = _artworkColor.asStateFlow()
 
     private val _currentLyrics = MutableStateFlow<Lyrics?>(null)
     val currentLyrics: StateFlow<Lyrics?> = _currentLyrics.asStateFlow()
+
+    val playbackParameters: StateFlow<PlaybackParameters> = playerConnection.playbackState.map {
+        PlaybackParameters(it.playbackSpeed, it.playbackPitch)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = PlaybackParameters(1f, 1f)
+    )
 
     val settings = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -142,5 +158,41 @@ class PlayerViewModel @Inject constructor(
             val playlistId = playlistRepository.createPlaylist(name.trim())
             playlistRepository.addSongsToPlaylist(playlistId, queue.map { it.id })
         }
+    }
+
+    fun playSong(song: Song, queue: List<Song>) {
+        playerConnection.playSong(song, queue)
+    }
+
+    fun togglePlayPause() {
+        playerConnection.togglePlayPause()
+    }
+
+    fun skipToNext() {
+        playerConnection.skipToNext()
+    }
+
+    fun skipToPrevious() {
+        playerConnection.skipToPrevious()
+    }
+
+    fun seekTo(positionMs: Long) {
+        playerConnection.seekTo(positionMs)
+    }
+
+    fun toggleShuffle() {
+        playerConnection.toggleShuffle()
+    }
+
+    fun cycleRepeatMode() {
+        playerConnection.cycleRepeatMode()
+    }
+
+    fun setPlaybackParameters(speed: Float, pitch: Float) {
+        playerConnection.setPlaybackParameters(speed, pitch)
+    }
+
+    fun playUri(uri: android.net.Uri) {
+        playerConnection.playUri(uri)
     }
 }

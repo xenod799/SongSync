@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
@@ -21,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -31,12 +35,12 @@ import androidx.navigation.compose.rememberNavController
 import com.songsync.core.domain.model.Song
 import com.songsync.core.ui.component.FloatingNavBar
 import com.songsync.core.ui.component.NavItem
-import com.songsync.feature.library.EqualizerScreen
 import com.songsync.feature.library.LibraryScreen
 import com.songsync.feature.library.LibraryViewModel
-import com.songsync.feature.library.SearchScreen
-import com.songsync.feature.library.SearchViewModel
+import com.songsync.feature.library.search.SearchScreen
+import com.songsync.feature.library.search.SearchViewModel
 import com.songsync.feature.library.tageditor.TagEditorBottomSheet
+import com.songsync.feature.player.EqualizerScreen
 import com.songsync.feature.player.LyricsBottomSheet
 import com.songsync.feature.player.MiniPlayer
 import com.songsync.feature.player.NowPlayingScreen
@@ -48,6 +52,7 @@ import com.songsync.feature.player.SpeedPitchBottomSheet
 import com.songsync.feature.settings.OnboardingScreen
 import com.songsync.feature.settings.SettingsScreen
 import com.songsync.feature.settings.SettingsViewModel
+import com.songsync.media.sync.MediaSyncWorker
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -75,11 +80,13 @@ fun SongSyncNavGraph(
     searchViewModel: SearchViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     val playbackState by playerViewModel.playbackState.collectAsState()
+    val currentLyrics by playerViewModel.currentLyrics.collectAsState()
 
     var showNowPlaying by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }
@@ -93,21 +100,27 @@ fun SongSyncNavGraph(
 
     val navItems = listOf(
         NavItem(
-            route = LibraryRoute::class.qualifiedName ?: "LibraryRoute",
             title = "Library",
-            icon = Icons.Rounded.LibraryMusic
+            iconOutlined = Icons.Outlined.LibraryMusic,
+            iconFilled = Icons.Rounded.LibraryMusic
         ),
         NavItem(
-            route = SearchRoute::class.qualifiedName ?: "SearchRoute",
             title = "Search",
-            icon = Icons.Rounded.Search
+            iconOutlined = Icons.Outlined.Search,
+            iconFilled = Icons.Rounded.Search
         ),
         NavItem(
-            route = SettingsRoute::class.qualifiedName ?: "Settings",
             title = "Settings",
-            icon = Icons.Rounded.Settings
+            iconOutlined = Icons.Outlined.Settings,
+            iconFilled = Icons.Rounded.Settings
         )
     )
+
+    val selectedNavIndex = when (currentRoute) {
+        SearchRoute::class.qualifiedName -> 1
+        SettingsRoute::class.qualifiedName -> 2
+        else -> 0
+    }
 
     val isTopLevelRoute = currentRoute == LibraryRoute::class.qualifiedName ||
             currentRoute == SearchRoute::class.qualifiedName ||
@@ -117,36 +130,49 @@ fun SongSyncNavGraph(
         Scaffold(
             bottomBar = {
                 if (isOnboardingCompleted && isTopLevelRoute) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        AnimatedVisibility(
-                            visible = playbackState.currentSong != null,
-                            enter = slideInVertically { it },
-                            exit = slideOutVertically { it }
-                        ) {
-                            playbackState.currentSong?.let { song ->
-                                MiniPlayer(
-                                    song = song,
-                                    isPlaying = playbackState.isPlaying,
-                                    progress = playbackState.progress,
-                                    onPlayPauseClick = { playerViewModel.togglePlayPause() },
-                                    onNextClick = { playerViewModel.skipToNext() },
-                                    onPreviousClick = { playerViewModel.skipToPrevious() },
-                                    onExpandClick = { showNowPlaying = true },
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                                )
-                            }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Mini Player
+                        if (playbackState.currentSong != null && !showNowPlaying) {
+                            MiniPlayer(
+                                playbackState = playbackState,
+                                onExpandNowPlaying = { showNowPlaying = true },
+                                onTogglePlayPause = { playerViewModel.togglePlayPause() },
+                                onNext = { playerViewModel.skipToNext() }
+                            )
                         }
 
+                        // Floating Navigation Bar
                         FloatingNavBar(
                             items = navItems,
-                            currentRoute = currentRoute ?: (LibraryRoute::class.qualifiedName ?: ""),
-                            onItemClick = { route ->
-                                navController.navigate(route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                            selectedIndex = selectedNavIndex,
+                            onItemSelected = { index ->
+                                when (index) {
+                                    0 -> navController.navigate(LibraryRoute) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                    1 -> navController.navigate(SearchRoute) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                    2 -> navController.navigate(SettingsRoute) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
                             }
                         )
@@ -163,8 +189,9 @@ fun SongSyncNavGraph(
             ) {
                 composable<OnboardingRoute> {
                     OnboardingScreen(
-                        onOnboardingComplete = {
+                        onOnboardingFinished = {
                             onOnboardingCompleted()
+                            MediaSyncWorker.enqueueOneTimeSync(context)
                             navController.navigate(LibraryRoute) {
                                 popUpTo(OnboardingRoute) { inclusive = true }
                             }
@@ -181,6 +208,9 @@ fun SongSyncNavGraph(
                         onNavigateToSearch = {
                             navController.navigate(SearchRoute)
                         },
+                        onNavigateToSettings = {
+                            navController.navigate(SettingsRoute)
+                        },
                         onEditTags = { song ->
                             tagEditorSong = song
                         }
@@ -190,10 +220,7 @@ fun SongSyncNavGraph(
                 composable<SearchRoute> {
                     SearchScreen(
                         viewModel = searchViewModel,
-                        onSongClick = { song ->
-                            playerViewModel.playSong(song, listOf(song))
-                        },
-                        onBackClick = {
+                        onNavigateBack = {
                             navController.popBackStack()
                         }
                     )
@@ -202,7 +229,10 @@ fun SongSyncNavGraph(
                 composable<SettingsRoute> {
                     SettingsScreen(
                         viewModel = settingsViewModel,
-                        onNavigateToEqualizer = {
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        },
+                        onOpenEqualizer = {
                             navController.navigate(EqualizerRoute)
                         }
                     )
@@ -211,7 +241,7 @@ fun SongSyncNavGraph(
                 composable<EqualizerRoute> {
                     EqualizerScreen(
                         equalizerManager = playerViewModel.equalizerManager,
-                        onBackClick = {
+                        onNavigateBack = {
                             navController.popBackStack()
                         }
                     )
@@ -219,44 +249,63 @@ fun SongSyncNavGraph(
             }
         }
 
-        // Now Playing Overlay
+        // Now Playing Fullscreen Overlay
         AnimatedVisibility(
             visible = showNowPlaying && playbackState.currentSong != null,
             enter = slideInVertically(initialOffsetY = { it }),
             exit = slideOutVertically(targetOffsetY = { it })
         ) {
-            playbackState.currentSong?.let { song ->
-                NowPlayingScreen(
-                    viewModel = playerViewModel,
-                    onCollapse = { showNowPlaying = false },
-                    onOpenQueue = { showQueue = true },
-                    onOpenLyrics = { showLyrics = true },
-                    onOpenSongInfo = { showSongInfo = true },
-                    onOpenSleepTimer = { showSleepTimer = true },
-                    onOpenSpeedPitch = { showSpeedPitch = true }
-                )
-            }
+            NowPlayingScreen(
+                viewModel = playerViewModel,
+                onCollapse = { showNowPlaying = false },
+                onOpenQueue = { showQueue = true },
+                onOpenLyrics = { showLyrics = true },
+                onOpenInfo = { showSongInfo = true },
+                onOpenSleepTimer = { showSleepTimer = true },
+                onOpenSpeedPitch = { showSpeedPitch = true }
+            )
         }
 
-        // Sheets
+        // Bottom Sheets
         if (showQueue) {
             QueueBottomSheet(
-                viewModel = playerViewModel,
-                onDismissRequest = { showQueue = false }
+                queue = playbackState.queue,
+                currentIndex = playbackState.currentQueueIndex,
+                onSongSelected = { index ->
+                    playbackState.queue.getOrNull(index)?.let { song ->
+                        playerViewModel.playSong(song, playbackState.queue)
+                    }
+                },
+                onRemoveFromQueue = { index ->
+                    playerViewModel.playerConnection.removeFromQueue(index)
+                },
+                onReorderQueue = { from, to ->
+                    playerViewModel.playerConnection.reorderQueue(from, to)
+                },
+                onClearQueue = {
+                    playerViewModel.playerConnection.clearQueue()
+                },
+                onSaveAsPlaylist = { name ->
+                    playerViewModel.saveQueueAsPlaylist(name)
+                },
+                onDismiss = { showQueue = false }
             )
         }
 
         if (showLyrics) {
             LyricsBottomSheet(
-                viewModel = playerViewModel,
-                onDismissRequest = { showLyrics = false }
+                lyrics = currentLyrics,
+                currentPositionMs = playbackState.currentPositionMs,
+                onSeekTo = { pos -> playerViewModel.seekTo(pos) },
+                onAdjustOffset = { offsetDelta -> playerViewModel.adjustLyricsOffset(offsetDelta) },
+                onDismiss = { showLyrics = false }
             )
         }
 
         if (showSongInfo && playbackState.currentSong != null) {
             SongInfoBottomSheet(
                 song = playbackState.currentSong!!,
-                onDismissRequest = { showSongInfo = false }
+                onDismiss = { showSongInfo = false }
             )
         }
 

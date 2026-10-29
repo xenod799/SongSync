@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Forward10
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -63,6 +64,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.songsync.core.domain.model.ArtShape
 import com.songsync.core.ui.component.FavoriteHeartButton
+import com.songsync.core.ui.component.ExpressiveMusicNotePlaceholder
 import com.songsync.core.ui.component.MorphingPlayPauseButton
 import com.songsync.core.ui.component.WavySlider
 import com.songsync.core.ui.theme.Cookie9SidedShape
@@ -77,6 +79,7 @@ fun NowPlayingScreen(
     onOpenQueue: () -> Unit,
     onOpenLyrics: () -> Unit,
     onOpenInfo: () -> Unit,
+    onOpenSleepTimer: () -> Unit,
     onOpenSpeedPitch: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -206,18 +209,15 @@ fun NowPlayingScreen(
                     AsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(currentSong.albumArtUri)
-                            .crossfade(true)
                             .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    Icon(
-                        imageVector = Icons.Rounded.MusicNote,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(96.dp)
+                    ExpressiveMusicNotePlaceholder(
+                        modifier = Modifier.fillMaxSize(),
+                        iconSize = 100.dp
                     )
                 }
             }
@@ -359,6 +359,14 @@ fun NowPlayingScreen(
                     Icon(
                         imageVector = Icons.Rounded.Lyrics,
                         contentDescription = "Lyrics",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                IconButton(onClick = onOpenSleepTimer) {
+                    Icon(
+                        imageVector = Icons.Rounded.Bedtime,
+                        contentDescription = "Sleep Timer",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

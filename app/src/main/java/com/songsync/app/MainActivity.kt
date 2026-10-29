@@ -7,19 +7,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.songsync.app.navigation.SongSyncNavGraph
-import com.songsync.core.domain.model.AppThemeMode
 import com.songsync.core.domain.repository.SettingsRepository
-import com.songsync.core.ui.theme.SongSyncPalette
 import com.songsync.core.ui.theme.SongSyncTheme
 import com.songsync.feature.player.PlayerViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -37,35 +36,21 @@ class MainActivity : ComponentActivity() {
         handleAudioIntent(intent)
 
         setContent {
-            val settings by settingsRepository.userSettings.collectAsState(
+            val settings by settingsRepository.settingsFlow.collectAsState(
                 initial = com.songsync.core.domain.model.UserSettings()
             )
 
-            val isDark = when (settings.themeMode) {
-                AppThemeMode.SYSTEM -> isSystemInDarkTheme()
-                AppThemeMode.LIGHT -> false
-                AppThemeMode.DARK, AppThemeMode.AMOLED -> true
-            }
-
-            val isAmoled = settings.themeMode == AppThemeMode.AMOLED
-
-            val palette = try {
-                SongSyncPalette.valueOf(settings.colorPalette)
-            } catch (_: Exception) {
-                SongSyncPalette.PEACH_POP
-            }
-
             SongSyncTheme(
-                palette = palette,
-                darkTheme = isDark,
-                amoled = isAmoled,
-                dynamicColor = settings.useDynamicColor
+                themeMode = settings.themeMode,
+                palette = settings.palette,
+                useDynamicColor = settings.useDynamicColor
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
+                    val scope = rememberCoroutineScope()
                     SongSyncNavGraph(
-                        isOnboardingCompleted = settings.isOnboardingCompleted,
+                        isOnboardingCompleted = settings.onboardingCompleted,
                         onOnboardingCompleted = {
-                            settingsRepository.setOnboardingCompleted(true)
+                            scope.launch { settingsRepository.setOnboardingCompleted(true) }
                         }
                     )
                 }

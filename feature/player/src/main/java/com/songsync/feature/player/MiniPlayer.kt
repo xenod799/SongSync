@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import com.songsync.core.ui.component.ExpressiveMusicNotePlaceholder
 import com.songsync.core.ui.theme.ListArtShape
 import com.songsync.media.player.PlaybackState
 
@@ -90,19 +91,13 @@ fun MiniPlayer(
                         AsyncImage(
                             model = ImageRequest.Builder(context)
                                 .data(currentSong.albumArtUri)
-                                .crossfade(true)
                                 .build(),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                        Icon(
-                            imageVector = Icons.Rounded.MusicNote,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        ExpressiveMusicNotePlaceholder(modifier = Modifier.fillMaxSize())
                     }
                 }
 

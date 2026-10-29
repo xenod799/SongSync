@@ -15,6 +15,11 @@ class SongSyncApplication : Application(), Configuration.Provider, SingletonImag
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    override fun onCreate() {
+        super.onCreate()
+        com.songsync.media.sync.MediaSyncWorker.enqueuePeriodicSync(this)
+    }
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -22,7 +27,6 @@ class SongSyncApplication : Application(), Configuration.Provider, SingletonImag
 
     override fun newImageLoader(context: PlatformContext): ImageLoader {
         return ImageLoader.Builder(context)
-            .crossfade(true)
             .build()
     }
 }

@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
 import androidx.annotation.OptIn
+import androidx.core.content.ContextCompat
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -68,7 +69,7 @@ class PlayerConnection @Inject constructor(
                 updateStateFromController()
                 scope.launch { restoreLastSession() }
             },
-            context.mainExecutor
+            ContextCompat.getMainExecutor(context)
         )
     }
 
@@ -267,6 +268,10 @@ class PlayerConnection @Inject constructor(
         mediaController?.seekToNextMediaItem()
     }
 
+    fun skipToNext() {
+        seekToNext()
+    }
+
     fun seekToPrevious() {
         val controller = mediaController ?: return
         // If track played > 3 seconds, seek to beginning of current track first
@@ -277,8 +282,17 @@ class PlayerConnection @Inject constructor(
         }
     }
 
+    fun skipToPrevious() {
+        seekToPrevious()
+    }
+
     fun setShuffleMode(enabled: Boolean) {
         mediaController?.shuffleModeEnabled = enabled
+    }
+
+    fun toggleShuffle() {
+        val controller = mediaController ?: return
+        controller.shuffleModeEnabled = !controller.shuffleModeEnabled
     }
 
     fun toggleRepeatMode() {
@@ -291,6 +305,25 @@ class PlayerConnection @Inject constructor(
         controller.repeatMode = nextMode
     }
 
+    fun cycleRepeatMode() {
+        toggleRepeatMode()
+    }
+
+    fun playUri(uri: Uri) {
+        val controller = mediaController ?: return
+        val mediaItem = MediaItem.Builder()
+            .setUri(uri)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(uri.lastPathSegment ?: "Audio Track")
+                    .build()
+            )
+            .build()
+        controller.setMediaItem(mediaItem)
+        controller.prepare()
+        controller.play()
+    }
+
     fun setPlaybackSpeed(speed: Float) {
         val controller = mediaController ?: return
         val pitch = controller.playbackParameters.pitch
@@ -301,6 +334,10 @@ class PlayerConnection @Inject constructor(
         val controller = mediaController ?: return
         val speed = controller.playbackParameters.speed
         controller.playbackParameters = PlaybackParameters(speed, pitch)
+    }
+
+    fun setPlaybackParameters(speed: Float, pitch: Float) {
+        mediaController?.playbackParameters = PlaybackParameters(speed, pitch)
     }
 
     fun reorderQueue(fromIndex: Int, toIndex: Int) {

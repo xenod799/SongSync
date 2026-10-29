@@ -1,14 +1,18 @@
 package com.songsync.feature.player
 
-import com.songsync.core.domain.model.Song
+import android.content.Context
+import com.songsync.core.domain.model.UserSettings
 import com.songsync.core.domain.repository.LyricsRepository
 import com.songsync.core.domain.repository.PlaylistRepository
 import com.songsync.core.domain.repository.SettingsRepository
 import com.songsync.core.domain.repository.SongRepository
-import com.songsync.media.EqualizerManager
-import com.songsync.media.PlaybackState
-import com.songsync.media.PlayerConnection
-import com.songsync.media.SleepTimerManager
+import com.songsync.media.player.EqualizerManager
+import com.songsync.media.player.PlaybackState
+import com.songsync.media.player.PlayerConnection
+import com.songsync.media.player.SleepTimerManager
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,18 +22,13 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModelTest {
 
+    private lateinit var context: Context
     private lateinit var playerConnection: PlayerConnection
     private lateinit var songRepository: SongRepository
     private lateinit var playlistRepository: PlaylistRepository
@@ -46,25 +45,28 @@ class PlayerViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
 
-        playerConnection = mock(PlayerConnection::class.java)
-        songRepository = mock(SongRepository::class.java)
-        playlistRepository = mock(PlaylistRepository::class.java)
-        settingsRepository = mock(SettingsRepository::class.java)
-        lyricsRepository = mock(LyricsRepository::class.java)
-        sleepTimerManager = mock(SleepTimerManager::class.java)
-        equalizerManager = mock(EqualizerManager::class.java)
+        context = mockk(relaxed = true)
+        playerConnection = mockk(relaxed = true)
+        songRepository = mockk(relaxed = true)
+        playlistRepository = mockk(relaxed = true)
+        settingsRepository = mockk(relaxed = true)
+        lyricsRepository = mockk(relaxed = true)
+        sleepTimerManager = mockk(relaxed = true)
+        equalizerManager = mockk(relaxed = true)
 
-        `when`(playerConnection.playbackState).thenReturn(playbackStateFlow)
-        `when`(playlistRepository.getAllPlaylists()).thenReturn(flowOf(emptyList()))
+        every { playerConnection.playbackState } returns playbackStateFlow
+        every { settingsRepository.settingsFlow } returns flowOf(UserSettings())
+        every { playlistRepository.getPlaylists() } returns flowOf(emptyList())
 
         viewModel = PlayerViewModel(
+            context = context,
             playerConnection = playerConnection,
-            songRepository = songRepository,
-            playlistRepository = playlistRepository,
-            settingsRepository = settingsRepository,
-            lyricsRepository = lyricsRepository,
             sleepTimerManager = sleepTimerManager,
-            equalizerManager = equalizerManager
+            equalizerManager = equalizerManager,
+            songRepository = songRepository,
+            lyricsRepository = lyricsRepository,
+            playlistRepository = playlistRepository,
+            settingsRepository = settingsRepository
         )
     }
 
@@ -76,36 +78,36 @@ class PlayerViewModelTest {
     @Test
     fun togglePlayPause_delegatesToPlayerConnection() = runTest {
         viewModel.togglePlayPause()
-        verify(playerConnection).togglePlayPause()
+        verify { playerConnection.togglePlayPause() }
     }
 
     @Test
     fun skipToNext_delegatesToPlayerConnection() = runTest {
         viewModel.skipToNext()
-        verify(playerConnection).skipToNext()
+        verify { playerConnection.skipToNext() }
     }
 
     @Test
     fun skipToPrevious_delegatesToPlayerConnection() = runTest {
         viewModel.skipToPrevious()
-        verify(playerConnection).skipToPrevious()
+        verify { playerConnection.skipToPrevious() }
     }
 
     @Test
     fun seekTo_delegatesToPlayerConnection() = runTest {
         viewModel.seekTo(45000L)
-        verify(playerConnection).seekTo(45000L)
+        verify { playerConnection.seekTo(45000L) }
     }
 
     @Test
     fun toggleShuffle_delegatesToPlayerConnection() = runTest {
         viewModel.toggleShuffle()
-        verify(playerConnection).toggleShuffle()
+        verify { playerConnection.toggleShuffle() }
     }
 
     @Test
     fun cycleRepeatMode_delegatesToPlayerConnection() = runTest {
         viewModel.cycleRepeatMode()
-        verify(playerConnection).cycleRepeatMode()
+        verify { playerConnection.cycleRepeatMode() }
     }
 }

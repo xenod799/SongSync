@@ -1,1 +1,24 @@
+# Gradle
+.gradle/
+build/
+**/build/
 
+# Local configuration
+local.properties
+
+# Kotlin
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Android
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.keystore

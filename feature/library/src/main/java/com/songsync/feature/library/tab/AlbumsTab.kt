@@ -86,7 +86,6 @@ fun AlbumsTab(
                             AsyncImage(
                                 model = ImageRequest.Builder(context)
                                     .data(album.artworkUri)
-                                    .crossfade(true)
                                     .build(),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
@@ -144,7 +143,6 @@ fun AlbumsTab(
                             AsyncImage(
                                 model = ImageRequest.Builder(context)
                                     .data(album.artworkUri)
-                                    .crossfade(true)
                                     .build(),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,

@@ -51,10 +51,8 @@ class EqualizerManager @Inject constructor() {
             virtualizer = Virtualizer(0, audioSessionId).apply {
                 enabled = _state.value.isEnabled
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                loudnessEnhancer = LoudnessEnhancer(audioSessionId).apply {
-                    enabled = _state.value.isEnabled
-                }
+            loudnessEnhancer = LoudnessEnhancer(audioSessionId).apply {
+                enabled = _state.value.isEnabled
             }
 
             readCurrentAudioFxState()

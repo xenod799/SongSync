@@ -61,21 +61,22 @@ fun SyncMascot(
         val animatedY = if (noAnim) 0f else floatOffset * scale
 
         // 1. Draw musical note stem and head (body)
-        val noteHeadRadius = 18f * scale
-        val headCenter = Offset(36f * scale, (68f * scale) + animatedY)
+        val headCenter = Offset(38f * scale, (68f * scale) + animatedY)
 
         val notePath = Path().apply {
-            // Note head (tilted oval)
+            // Note head (proper musical tilted ellipse)
             addOval(
                 androidx.compose.ui.geometry.Rect(
-                    center = headCenter,
-                    radius = noteHeadRadius
+                    left = headCenter.x - (21f * scale),
+                    top = headCenter.y - (16f * scale),
+                    right = headCenter.x + (21f * scale),
+                    bottom = headCenter.y + (16f * scale)
                 )
             )
             // Stem
             val stemWidth = 7f * scale
-            val stemLeft = headCenter.x + noteHeadRadius - stemWidth - (1f * scale)
-            val stemTop = (22f * scale) + animatedY
+            val stemLeft = headCenter.x + (14f * scale)
+            val stemTop = (20f * scale) + animatedY
             val stemBottom = headCenter.y
             addRoundRect(
                 RoundRect(

@@ -22,10 +22,15 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +50,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.songsync.core.domain.model.Song
 import com.songsync.core.ui.component.EmptyStateView
+import com.songsync.core.ui.component.ExpressiveMusicNotePlaceholder
 import com.songsync.core.ui.component.FastScroller
 import com.songsync.core.ui.component.FavoriteHeartButton
 import com.songsync.core.ui.theme.ListArtShape
@@ -60,14 +66,30 @@ fun SongsTab(
     onSongClick: (Song) -> Unit,
     onSongLongClick: (Song) -> Unit,
     onToggleFavorite: (Song) -> Unit,
+    onEditTags: ((Song) -> Unit)? = null,
+    hasPermission: Boolean = true,
+    onRequestPermission: () -> Unit = {},
+    onScanClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (songs.isEmpty()) {
-        EmptyStateView(
-            title = "No songs found",
-            subtitle = "Your audio library is empty. Add songs to your device storage to start listening.",
-            modifier = modifier
-        )
+        if (!hasPermission) {
+            EmptyStateView(
+                title = "Permission Required",
+                subtitle = "SongSync needs access to your audio files so it can discover and play your local music offline.",
+                actionButtonText = "Grant Storage Access",
+                onActionClick = onRequestPermission,
+                modifier = modifier
+            )
+        } else {
+            EmptyStateView(
+                title = "No songs found",
+                subtitle = "Your audio library is empty. Scan your device to discover downloaded music files.",
+                actionButtonText = "Scan for Music",
+                onActionClick = onScanClick,
+                modifier = modifier
+            )
+        }
         return
     }
 
@@ -109,6 +131,7 @@ fun SongsTab(
                         },
                         onLongClick = { onSongLongClick(song) },
                         onToggleFavorite = { onToggleFavorite(song) },
+                        onEditTags = onEditTags?.let { callback -> { callback(song) } },
                         modifier = Modifier.animateItem()
                     )
                 }
@@ -135,6 +158,7 @@ fun SongListItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onEditTags: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -181,19 +205,13 @@ fun SongListItem(
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(song.albumArtUri)
-                        .crossfade(true)
                         .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                Icon(
-                    imageVector = Icons.Rounded.MusicNote,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.size(24.dp)
-                )
+                ExpressiveMusicNotePlaceholder(modifier = Modifier.fillMaxSize())
             }
         }
 
@@ -225,6 +243,37 @@ fun SongListItem(
             size = 38.dp,
             iconSize = 22.dp
         )
+
+        if (onEditTags != null && !isMultiSelectMode) {
+            var menuExpanded by remember { mutableStateOf(false) }
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(
+                        imageVector = Icons.Rounded.MoreVert,
+                        contentDescription = "More options",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit tags") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.Edit,
+                                contentDescription = null
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onEditTags()
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 

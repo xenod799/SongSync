@@ -5,8 +5,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,6 +32,8 @@ class SleepTimerManager @Inject constructor() {
     private val _timerState = MutableStateFlow<SleepTimerState>(SleepTimerState.Inactive)
     val timerState: StateFlow<SleepTimerState> = _timerState.asStateFlow()
 
+    private val _fadeOutEnabled = MutableStateFlow(true)
+
     private var onTimerFinished: (() -> Unit)? = null
     private var onFadeVolume: ((Float) -> Unit)? = null
 
@@ -37,7 +42,7 @@ class SleepTimerManager @Inject constructor() {
         this.onFadeVolume = onFade
     }
 
-    fun startTimer(durationMinutes: Int, endOfTrack: Boolean = false, fadeOut: Boolean = true) {
+    fun startTimer(durationMinutes: Int, endOfTrack: Boolean = false, fadeOut: Boolean = _fadeOutEnabled.value) {
         cancelTimer()
         val totalMs = durationMinutes * 60 * 1000L
 
@@ -86,5 +91,31 @@ class SleepTimerManager @Inject constructor() {
         timerJob = null
         _timerState.value = SleepTimerState.Inactive
         onFadeVolume?.invoke(1.0f)
+    }
+
+    val remainingMillis: StateFlow<Long> = timerState.map { (it as? SleepTimerState.Active)?.remainingMs ?: 0L }
+        .stateIn(scope, SharingStarted.Eagerly, 0L)
+
+    val isTimerActive: StateFlow<Boolean> = timerState.map { it is SleepTimerState.Active }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+
+    val isEndOfTrack: StateFlow<Boolean> = timerState.map { (it as? SleepTimerState.Active)?.endOfTrack ?: false }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+
+    val fadeOutEnabled: StateFlow<Boolean> = _fadeOutEnabled.asStateFlow()
+
+    fun setStopAtEndOfTrack(enabled: Boolean) {
+        if (enabled) {
+            startEndOfTrackTimer()
+        } else {
+            val current = _timerState.value
+            if (current is SleepTimerState.Active && current.endOfTrack) {
+                cancelTimer()
+            }
+        }
+    }
+
+    fun setFadeOutEnabled(enabled: Boolean) {
+        _fadeOutEnabled.value = enabled
     }
 }
