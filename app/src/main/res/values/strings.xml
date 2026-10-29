@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SongSync</string>
+    <string name="tab_songs">Songs</string>
+    <string name="tab_albums">Albums</string>
+    <string name="tab_artists">Artists</string>
+    <string name="tab_genres">Genres</string>
+    <string name="tab_playlists">Playlists</string>
+    <string name="tab_folders">Folders</string>
+    <string name="search_hint">Search songs, artists, albums…</string>
+    <string name="empty_library_title">No music found</string>
+    <string name="empty_library_subtitle">Sync is resting! Add audio files to your device storage to start listening.</string>
+    <string name="permission_audio_title">Access your music library</string>
+    <string name="permission_audio_desc">SongSync scans your local audio files to organize your collection completely offline. Zero data leaves your device.</string>
+    <string name="permission_notifications_title">Show playback notification</string>
+    <string name="permission_notifications_desc">Keep playback controls visible on your lock screen and notification bar while listening in the background.</string>
+    <string name="grant_permission">Grant permission</string>
+    <string name="sync_scanning">Scanning media…</string>
+    <string name="widget_name">SongSync Player</string>
+    <string name="widget_description">Compact and expanded music playback controls</string>
+</resources>

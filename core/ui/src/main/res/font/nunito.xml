@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<font-family xmlns:app="http://schemas.android.com/apk/res-auto">
+    <!-- Nunito Regular for body text -->
+    <font
+        app:fontStyle="normal"
+        app:fontWeight="400"
+        app:font="@font/nunito_regular" />
+    <!-- Nunito Medium for titles and labels -->
+    <font
+        app:fontStyle="normal"
+        app:fontWeight="500"
+        app:font="@font/nunito_medium" />
+</font-family>
