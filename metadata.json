@@ -2,5 +2,5 @@
   "name": "SongSync",
   "description": "Production-quality, fully offline music player Android app with Material 3 Expressive design, Media3 playback, and zero bloat.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": ["NONE"]
 }
