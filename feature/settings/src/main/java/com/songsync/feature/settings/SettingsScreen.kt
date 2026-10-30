@@ -53,12 +53,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.songsync.core.domain.model.ArtShape
 import com.songsync.core.domain.model.ColorPalette
 import com.songsync.core.domain.model.ThemeMode
 import com.songsync.core.ui.theme.CardContainerShape
+import com.songsync.core.ui.theme.Cookie9SidedShape
+import com.songsync.core.ui.theme.PlayerArtDefaultShape
 import com.songsync.core.ui.theme.PillShape
+import com.songsync.core.ui.theme.SoftBurstShape
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -248,22 +252,50 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(12.dp))
             Text("Album Art Shape", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 ArtShape.entries.forEach { shape ->
                     val isSelected = settings.artShape == shape
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(PillShape)
-                            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh)
-                            .clickable { viewModel.setArtShape(shape) }
-                            .padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center
+                    // Preview tile clipped to the *actual* art shape, label
+                    // sits BELOW the tile (never inside the clip) so the long
+                    // labels no longer get warped by the circular clip
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(shape.toComposeShape())
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceContainerHigh
+                                )
+                                .border(
+                                    width = if (isSelected) 2.dp else 1.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                    shape = shape.toComposeShape()
+                                )
+                                .clickable { viewModel.setArtShape(shape) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.LibraryMusic,
+                                contentDescription = shape.name.lowercase().replace('_', ' ')
+                                    .replaceFirstChar { it.uppercase() },
+                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = shape.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() },
+                            text = shape.name.lowercase().replace('_', ' ')
+                                .replaceFirstChar { it.uppercase() },
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                            color = if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
                         )
                     }
                 }
@@ -326,7 +358,7 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("SongSync v1.0.0", style = MaterialTheme.typography.titleMedium)
+                    Text("SongSync v${viewModel.appVersion}", style = MaterialTheme.typography.titleMedium)
                     Text("Fully offline, zero bloat, native Android music player", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -394,7 +426,7 @@ fun SettingsScreen(
             title = { Text("About SongSync") },
             text = {
                 Text(
-                    "SongSync is an expressive, fully offline music player crafted with Jetpack Compose, Material 3 Expressive, and Android Media3.\n\n• Zero ads, tracking, or network permissions\n• 100% offline device library\n• ReplayGain, crossfade, and equalizer\n• Apache 2.0 open source license"
+                    "SongSync is an expressive, fully offline music player crafted with Jetpack Compose, Material 3 Expressive, and Android Media3.\n\n• Zero ads, tracking, or network permissions\n• 100% offline device library\n• ReplayGain, crossfade, and equalizer\n• Apache 2.0 open source license\n\nVersion ${viewModel.appVersion}"
                 )
             },
             confirmButton = {
@@ -414,4 +446,16 @@ private fun SectionHeader(icon: androidx.compose.ui.graphics.vector.ImageVector,
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
     }
+}
+
+/**
+ * ArtShape -> Compose Shape mapping used to preview each option.
+ * Mirrors the mapping in NowPlayingScreen so the picker shows exactly
+ * what the album art will look like.
+ */
+private fun ArtShape.toComposeShape(): Shape = when (this) {
+    ArtShape.ROUNDED_SQUARE -> PlayerArtDefaultShape
+    ArtShape.CIRCLE -> CircleShape
+    ArtShape.COOKIE -> Cookie9SidedShape()
+    ArtShape.SOFT_BURST -> SoftBurstShape()
 }

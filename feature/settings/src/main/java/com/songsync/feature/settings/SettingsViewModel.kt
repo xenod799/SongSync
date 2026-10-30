@@ -1,5 +1,7 @@
 package com.songsync.feature.settings
 
+import android.content.Context
+import android.content.pm.PackageManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.songsync.core.domain.model.ArtShape
@@ -8,6 +10,7 @@ import com.songsync.core.domain.model.ThemeMode
 import com.songsync.core.domain.model.UserSettings
 import com.songsync.core.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -16,8 +19,20 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+
+    /**
+     * Real versionName from the package manifest so the About section always
+     * matches the installed build (no hardcoded string to forget).
+     */
+    val appVersion: String = try {
+        val info = context.packageManager.getPackageInfo(context.packageName, 0)
+        info.versionName ?: "?.?.?"
+    } catch (_: PackageManager.NameNotFoundException) {
+        "?.?.?"
+    }
 
     val settings: StateFlow<UserSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
