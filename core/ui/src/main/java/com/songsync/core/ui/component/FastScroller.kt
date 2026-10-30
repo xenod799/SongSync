@@ -27,11 +27,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -96,12 +98,18 @@ fun FastScroller(
                 .onGloballyPositioned { coordinates ->
                     columnHeight = coordinates.size.height.toFloat()
                 }
+                // Invisible but still hit-testable while idle; letters only
+                // draw while actively dragging or scrolling the list, so the
+                // track never visually overlaps the row action buttons
+                .graphicsLayer {
+                    alpha = if (isDragging || listState.isScrollInProgress) 1f else 0f
+                }
                 .pointerInput(alphabet, items) {
                     detectVerticalDragGestures(
                         onDragStart = { offset ->
                             isDragging = true
                             dragY = offset.y
-                            updateLetterAndScroll(offset.y, columnHeight, alphabet, items, listState) { letter ->
+                            updateLetterAndScroll(offset.y, columnHeight, alphabet, items, listState, coroutineScope) { letter ->
                                 currentLetter = letter
                             }
                         },
@@ -109,7 +117,7 @@ fun FastScroller(
                         onDragCancel = { isDragging = false },
                         onVerticalDrag = { change, _ ->
                             dragY = change.position.y.coerceIn(0f, columnHeight)
-                            updateLetterAndScroll(dragY, columnHeight, alphabet, items, listState) { letter ->
+                            updateLetterAndScroll(dragY, columnHeight, alphabet, items, listState, coroutineScope) { letter ->
                                 currentLetter = letter
                             }
                         }
@@ -135,6 +143,7 @@ private fun updateLetterAndScroll(
     alphabet: List<Char>,
     items: List<String>,
     listState: LazyListState,
+    coroutineScope: CoroutineScope,
     onLetterSelected: (String) -> Unit
 ) {
     if (totalHeight <= 0f || alphabet.isEmpty()) return
@@ -147,7 +156,7 @@ private fun updateLetterAndScroll(
         it.firstOrNull()?.uppercaseChar() == char
     }
     if (targetItemIndex >= 0) {
-        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+        coroutineScope.launch {
             listState.scrollToItem(targetItemIndex)
         }
     }

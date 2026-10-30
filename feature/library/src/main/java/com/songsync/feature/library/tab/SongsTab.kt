@@ -99,7 +99,7 @@ fun SongsTab(
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().padding(end = 36.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
             itemsIndexed(
                 items = songs,
