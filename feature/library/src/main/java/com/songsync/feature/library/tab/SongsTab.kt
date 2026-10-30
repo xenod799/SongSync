@@ -236,18 +236,27 @@ fun SongListItem(
             )
         }
 
-        // Favorite heart button with radiating butter sparkles
-        FavoriteHeartButton(
-            isFavorite = song.isFavorite,
-            onToggleFavorite = onToggleFavorite,
-            size = 38.dp,
-            iconSize = 22.dp
-        )
+        // Favorite heart in a 48dp cell so its touch/center aligns with the
+        // options cell below (heart itself is 38dp, centered in the slot)
+        Box(
+            modifier = Modifier.size(48.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            FavoriteHeartButton(
+                isFavorite = song.isFavorite,
+                onToggleFavorite = onToggleFavorite,
+                size = 38.dp,
+                iconSize = 22.dp
+            )
+        }
 
         if (onEditTags != null && !isMultiSelectMode) {
             var menuExpanded by remember { mutableStateOf(false) }
             Box {
-                IconButton(onClick = { menuExpanded = true }) {
+                IconButton(
+                    onClick = { menuExpanded = true },
+                    modifier = Modifier.size(48.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Rounded.MoreVert,
                         contentDescription = "More options",

@@ -154,6 +154,7 @@ fun SongSyncNavGraph(
                                 playbackState = playbackState,
                                 onExpandNowPlaying = { showNowPlaying = true },
                                 onTogglePlayPause = { playerViewModel.togglePlayPause() },
+                                onPrevious = { playerViewModel.skipToPrevious() },
                                 onNext = { playerViewModel.skipToNext() }
                             )
                         }

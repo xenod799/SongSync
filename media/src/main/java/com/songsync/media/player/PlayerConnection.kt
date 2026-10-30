@@ -175,6 +175,13 @@ class PlayerConnection @Inject constructor(
                     currentQueueIndex = controller.currentMediaItemIndex
                 )
             }
+            // The controller may attach while the session is already playing
+            // (e.g. after a session restore), in which case onIsPlayingChanged
+            // never fires — start position updates explicitly or the seekbar
+            // stays frozen at the restored position.
+            if (controller.isPlaying) {
+                startPositionUpdates()
+            }
         }
     }
 
@@ -254,7 +261,15 @@ class PlayerConnection @Inject constructor(
 
     fun skipForward10s() {
         val controller = mediaController ?: return
-        val newPos = (controller.currentPosition + 10_000L).coerceAtMost(controller.duration)
+        val position = controller.currentPosition.coerceAtLeast(0L)
+        // duration is C.TIME_UNSET (a large negative) for unknown/live media —
+        // coercing against it would produce a negative garbage position
+        val duration = controller.duration
+        val newPos = if (duration == C.TIME_UNSET || duration <= 0L) {
+            position + 10_000L
+        } else {
+            (position + 10_000L).coerceAtMost(duration)
+        }
         seekTo(newPos)
     }
 

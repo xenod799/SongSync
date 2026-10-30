@@ -63,6 +63,9 @@ class SleepTimerManager @Inject constructor() {
                 _timerState.value = SleepTimerState.Active(remaining, totalMs, endOfTrack, fadeOut)
             }
 
+            // Restore the volume before finishing — the last fade step left it
+            // near-silent, which would otherwise persist into the next playback
+            onFadeVolume?.invoke(1.0f)
             _timerState.value = SleepTimerState.Inactive
             onTimerFinished?.invoke()
         }
