@@ -2,7 +2,6 @@ package com.songsync.core.ui.component
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -10,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -18,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -55,40 +55,49 @@ fun FloatingNavBar(
             )
             .clip(PillShape)
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .padding(horizontal = 8.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 12.dp, vertical = 12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEachIndexed { index, item ->
                 val isSelected = index == selectedIndex
                 val scale by animateFloatAsState(
-                    targetValue = if (isSelected) 1.05f else 1.0f,
+                    targetValue = if (isSelected) 1.08f else 1.0f,
                     animationSpec = if (noAnim) SongSyncMotion.EffectsFast else SongSyncMotion.SpatialDefault,
                     label = "navScale"
                 )
 
+                // Each cell is an equal-weight slot; the highlight pill is sized to
+                // the icon instead of stretching across the whole cell (old bug:
+                // CircleShape clip on a cell-wide Box rendered a flat ellipse).
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight()
-                        .padding(vertical = 10.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (isSelected) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Transparent
-                        )
-                        .bouncyClickable { onItemSelected(index) },
+                        .fillMaxHeight(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = if (isSelected) item.iconFilled else item.iconOutlined,
-                        contentDescription = item.title,
-                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(26.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(width = 64.dp, height = 48.dp)
+                            .scale(scale)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                else androidx.compose.ui.graphics.Color.Transparent
+                            )
+                            .bouncyClickable { onItemSelected(index) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isSelected) item.iconFilled else item.iconOutlined,
+                            contentDescription = item.title,
+                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
         }

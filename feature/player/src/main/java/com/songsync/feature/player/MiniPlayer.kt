@@ -140,11 +140,17 @@ fun MiniPlayer(
                 Spacer(modifier = Modifier.width(4.dp))
 
                 // Next Button
-                IconButton(onClick = onNext) {
+                IconButton(
+                    onClick = onNext,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                ) {
                     Icon(
                         imageVector = Icons.Rounded.SkipNext,
                         contentDescription = "Next",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }

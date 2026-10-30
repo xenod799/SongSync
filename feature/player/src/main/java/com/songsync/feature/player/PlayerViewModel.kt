@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flowOf
@@ -88,16 +89,23 @@ class PlayerViewModel @Inject constructor(
 
     private fun observeCurrentSong() {
         viewModelScope.launch {
-            playerConnection.playbackState.collectLatest { state ->
-                val song = state.currentSong
-                if (song != null) {
-                    extractArtworkColor(song.albumArtUri)
-                    loadLyrics(song.id, song.dataPath)
-                } else {
-                    _artworkColor.value = null
-                    _currentLyrics.value = null
+            // Only react when the actual song changes — playbackState also emits every
+            // 100ms for position updates, which would restart artwork/lyrics work 10x/sec
+            playerConnection.playbackState
+                .map { it.currentSong }
+                .distinctUntilChanged()
+                .collectLatest { song ->
+                    if (song != null) {
+                        extractArtworkColor(song.albumArtUri)
+                        // Collected inline so collectLatest cancels it when the song changes
+                        lyricsRepository.getLyrics(song.id, song.dataPath).collect { lyrics ->
+                            _currentLyrics.value = lyrics
+                        }
+                    } else {
+                        _artworkColor.value = null
+                        _currentLyrics.value = null
+                    }
                 }
-            }
         }
     }
 
@@ -125,14 +133,6 @@ class PlayerViewModel @Inject constructor(
             }
         } catch (_: Exception) {
             _artworkColor.value = null
-        }
-    }
-
-    private fun loadLyrics(songId: Long, path: String) {
-        viewModelScope.launch {
-            lyricsRepository.getLyrics(songId, path).collectLatest {
-                _currentLyrics.value = it
-            }
         }
     }
 

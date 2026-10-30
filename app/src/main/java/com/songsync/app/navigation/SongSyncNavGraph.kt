@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.LibraryMusic
@@ -37,6 +38,8 @@ import com.songsync.core.ui.component.FloatingNavBar
 import com.songsync.core.ui.component.NavItem
 import com.songsync.feature.library.LibraryScreen
 import com.songsync.feature.library.LibraryViewModel
+import com.songsync.feature.library.detail.DetailType
+import com.songsync.feature.library.detail.SongListDetailScreen
 import com.songsync.feature.library.search.SearchScreen
 import com.songsync.feature.library.search.SearchViewModel
 import com.songsync.feature.library.tageditor.TagEditorBottomSheet
@@ -69,6 +72,13 @@ object EqualizerRoute
 
 @Serializable
 object OnboardingRoute
+
+@Serializable
+data class LibraryDetailRoute(
+    val type: String,
+    val key: String,
+    val title: String
+)
 
 @Composable
 fun SongSyncNavGraph(
@@ -133,6 +143,7 @@ fun SongSyncNavGraph(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .navigationBarsPadding()
                             .padding(bottom = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -213,6 +224,41 @@ fun SongSyncNavGraph(
                         },
                         onEditTags = { song ->
                             tagEditorSong = song
+                        },
+                        onAlbumClick = { album ->
+                            navController.navigate(
+                                LibraryDetailRoute(type = DetailType.ALBUM, key = album.id.toString(), title = album.title)
+                            )
+                        },
+                        onArtistClick = { artist ->
+                            navController.navigate(
+                                LibraryDetailRoute(type = DetailType.ARTIST, key = artist.id.toString(), title = artist.name)
+                            )
+                        },
+                        onGenreClick = { genre ->
+                            navController.navigate(
+                                LibraryDetailRoute(type = DetailType.GENRE, key = genre.name, title = genre.name)
+                            )
+                        },
+                        onPlaylistClick = { playlist ->
+                            navController.navigate(
+                                LibraryDetailRoute(type = DetailType.PLAYLIST, key = playlist.id.toString(), title = playlist.name)
+                            )
+                        },
+                        onFolderClick = { folder ->
+                            navController.navigate(
+                                LibraryDetailRoute(type = DetailType.FOLDER, key = folder.path, title = folder.name)
+                            )
+                        }
+                    )
+                }
+
+                composable<LibraryDetailRoute> {
+                    SongListDetailScreen(
+                        viewModel = hiltViewModel(),
+                        onNavigateBack = { navController.popBackStack() },
+                        onSongClick = { song, queue ->
+                            playerViewModel.playSong(song, queue)
                         }
                     )
                 }

@@ -8,7 +8,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,11 +15,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -29,7 +30,6 @@ import androidx.compose.material.icons.rounded.Forward10
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Lyrics
-import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOne
@@ -38,7 +38,6 @@ import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material.icons.rounded.Speed
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -130,7 +129,10 @@ fun NowPlayingScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
             .background(backgroundBrush)
+            .systemBarsPadding()
+            .displayCutoutPadding()
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragEnd = {
@@ -159,21 +161,22 @@ fun NowPlayingScreen(
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top Bar: Collapse down arrow, Song Info, Queue shortcuts
-            Row(
+            Box(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                contentAlignment = Alignment.Center
             ) {
-                IconButton(onClick = onCollapse) {
+                IconButton(
+                    onClick = onCollapse,
+                    modifier = Modifier.align(Alignment.CenterStart)
+                ) {
                     Icon(
                         imageVector = Icons.Rounded.KeyboardArrowDown,
                         contentDescription = "Collapse player",
                         tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
 
@@ -183,7 +186,7 @@ fun NowPlayingScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Row {
+                Row(modifier = Modifier.align(Alignment.CenterEnd)) {
                     IconButton(onClick = onOpenInfo) {
                         Icon(imageVector = Icons.Rounded.Info, contentDescription = "Song Info")
                     }
@@ -193,36 +196,41 @@ fun NowPlayingScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Large Album Artwork
+            // Large Album Artwork — flexes to fit any display height, centered in leftover space
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.88f)
-                    .aspectRatio(1f)
-                    .scale(appliedArtScale)
-                    .clip(artShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .weight(1f)
+                    .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                if (currentSong.albumArtUri != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(currentSong.albumArtUri)
-                            .build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    ExpressiveMusicNotePlaceholder(
-                        modifier = Modifier.fillMaxSize(),
-                        iconSize = 100.dp
-                    )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.88f)
+                        .aspectRatio(1f)
+                        .scale(appliedArtScale)
+                        .clip(artShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (currentSong.albumArtUri != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(currentSong.albumArtUri)
+                                .build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        ExpressiveMusicNotePlaceholder(
+                            modifier = Modifier.fillMaxSize(),
+                            iconSize = 100.dp
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Song Title & Artist + Favorite Heart Button
             Row(
