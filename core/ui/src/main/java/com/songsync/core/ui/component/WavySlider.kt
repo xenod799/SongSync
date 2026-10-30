@@ -34,6 +34,8 @@ fun WavySlider(
     onValueChange: (Float) -> Unit,
     isPlaying: Boolean,
     modifier: Modifier = Modifier,
+    waveLengthDp: Float = 40f,
+    playingAmplitudeDp: Float = 8f,
     activeColor: Color = MaterialTheme.colorScheme.primary,
     inactiveColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     onValueChangeFinished: (() -> Unit)? = null
@@ -41,17 +43,17 @@ fun WavySlider(
     val density = LocalDensity.current
     val noAnim = isAnimationDisabled()
 
-    val targetAmplitude = if (isPlaying) 6f else 0f
+    val targetAmplitude = if (isPlaying) playingAmplitudeDp else 0f
     val animatedAmplitude by animateFloatAsState(
         targetValue = targetAmplitude,
         animationSpec = if (noAnim) SongSyncMotion.EffectsFast else SongSyncMotion.SpatialSlow,
         label = "waveAmplitude"
     )
 
-    val waveLengthPx = with(density) { 28.dp.toPx() }
+    val waveLengthPx = with(density) { waveLengthDp.dp.toPx() }
     val amplitudePx = with(density) { animatedAmplitude.dp.toPx() }
     val strokeWidthPx = with(density) { 4.dp.toPx() }
-    val thumbRadiusPx = with(density) { 8.dp.toPx() }
+    val thumbRadiusPx = with(density) { 10.dp.toPx() }
 
     var isDragging by remember { mutableStateOf(false) }
     var dragProgress by remember { mutableFloatStateOf(value) }
@@ -61,7 +63,7 @@ fun WavySlider(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(36.dp)
+            .height(44.dp)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = { offset ->

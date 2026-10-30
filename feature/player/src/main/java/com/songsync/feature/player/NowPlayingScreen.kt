@@ -186,12 +186,29 @@ fun NowPlayingScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Row(modifier = Modifier.align(Alignment.CenterEnd)) {
-                    IconButton(onClick = onOpenInfo) {
-                        Icon(imageVector = Icons.Rounded.Info, contentDescription = "Song Info")
+                Row(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = onOpenInfo,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Info,
+                            contentDescription = "Song Info",
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
-                    IconButton(onClick = onOpenQueue) {
-                        Icon(imageVector = Icons.Rounded.QueueMusic, contentDescription = "Queue")
+                    IconButton(
+                        onClick = onOpenQueue,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.QueueMusic,
+                            contentDescription = "Queue",
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
             }
@@ -297,86 +314,156 @@ fun NowPlayingScreen(
                 }
             }
 
-            // Main Playback Controls
+            // Main Playback Controls — each button lives in an equal-weight
+            // slot so its center lands on the same grid (SpaceEvenly left
+            // centers unevenly because the 72dp play button made its slot
+            // wider than the 48dp ones). Icon size descends with importance:
+            // toggles 24 < skip-10s 28 < track change 36 < play 72.
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Shuffle Mode Toggle
-                IconButton(onClick = { viewModel.playerConnection.setShuffleMode(!playbackState.shuffleModeEnabled) }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Shuffle,
-                        contentDescription = "Shuffle",
-                        tint = if (playbackState.shuffleModeEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(
+                        onClick = { viewModel.playerConnection.setShuffleMode(!playbackState.shuffleModeEnabled) },
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Shuffle,
+                            contentDescription = "Shuffle",
+                            tint = if (playbackState.shuffleModeEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
 
-                // Skip -10s
-                IconButton(onClick = { viewModel.playerConnection.skipBackward10s() }) {
-                    Icon(imageVector = Icons.Rounded.Replay10, contentDescription = "Skip back 10s", modifier = Modifier.size(28.dp))
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(
+                        onClick = { viewModel.playerConnection.skipBackward10s() },
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Replay10,
+                            contentDescription = "Skip back 10s",
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
 
-                // Previous Track
-                IconButton(onClick = { viewModel.playerConnection.seekToPrevious() }) {
-                    Icon(imageVector = Icons.Rounded.SkipPrevious, contentDescription = "Previous Track", modifier = Modifier.size(34.dp))
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(
+                        onClick = { viewModel.playerConnection.seekToPrevious() },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.SkipPrevious,
+                            contentDescription = "Previous Track",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
                 }
 
                 // Morphing Play/Pause Button (72dp, Cookie9Sided <-> Circle)
-                MorphingPlayPauseButton(
-                    isPlaying = playbackState.isPlaying,
-                    onClick = { viewModel.playerConnection.togglePlayPause() },
-                    size = 72.dp
-                )
-
-                // Next Track
-                IconButton(onClick = { viewModel.playerConnection.seekToNext() }) {
-                    Icon(imageVector = Icons.Rounded.SkipNext, contentDescription = "Next Track", modifier = Modifier.size(34.dp))
+                Box(modifier = Modifier.weight(1.4f), contentAlignment = Alignment.Center) {
+                    MorphingPlayPauseButton(
+                        isPlaying = playbackState.isPlaying,
+                        onClick = { viewModel.playerConnection.togglePlayPause() },
+                        size = 72.dp
+                    )
                 }
 
-                // Skip +10s
-                IconButton(onClick = { viewModel.playerConnection.skipForward10s() }) {
-                    Icon(imageVector = Icons.Rounded.Forward10, contentDescription = "Skip forward 10s", modifier = Modifier.size(28.dp))
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(
+                        onClick = { viewModel.playerConnection.seekToNext() },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.SkipNext,
+                            contentDescription = "Next Track",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
                 }
 
-                // Repeat Mode Toggle
-                IconButton(onClick = { viewModel.playerConnection.toggleRepeatMode() }) {
-                    val repeatIcon = if (playbackState.repeatMode == 1) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat
-                    val repeatTint = if (playbackState.repeatMode != 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    Icon(imageVector = repeatIcon, contentDescription = "Repeat", tint = repeatTint)
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(
+                        onClick = { viewModel.playerConnection.skipForward10s() },
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Forward10,
+                            contentDescription = "Skip forward 10s",
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(
+                        onClick = { viewModel.playerConnection.toggleRepeatMode() },
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        val repeatIcon = if (playbackState.repeatMode == 1) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat
+                        val repeatTint = if (playbackState.repeatMode != 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        Icon(
+                            imageVector = repeatIcon,
+                            contentDescription = "Repeat",
+                            tint = repeatTint,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
 
-            // Bottom action shortcuts: Speed/Pitch and Lyrics
+            // Bottom action shortcuts: Speed/Pitch, Lyrics, Sleep Timer —
+            // equal-weight slots with uniform 56dp buttons (same alignment
+            // grid as the main controls)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onOpenSpeedPitch) {
-                    Icon(
-                        imageVector = Icons.Rounded.Speed,
-                        contentDescription = "Playback Speed",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(
+                        onClick = onOpenSpeedPitch,
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Speed,
+                            contentDescription = "Playback Speed",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
 
-                IconButton(onClick = onOpenLyrics) {
-                    Icon(
-                        imageVector = Icons.Rounded.Lyrics,
-                        contentDescription = "Lyrics",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(
+                        onClick = onOpenLyrics,
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Lyrics,
+                            contentDescription = "Lyrics",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
 
-                IconButton(onClick = onOpenSleepTimer) {
-                    Icon(
-                        imageVector = Icons.Rounded.Bedtime,
-                        contentDescription = "Sleep Timer",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    IconButton(
+                        onClick = onOpenSleepTimer,
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Bedtime,
+                            contentDescription = "Sleep Timer",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
             }
         }
