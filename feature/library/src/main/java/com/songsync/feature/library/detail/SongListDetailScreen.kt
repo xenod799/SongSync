@@ -205,10 +205,8 @@ fun SongListDetailScreen(
                     )
                 }
             }
-            return
-        }
-
-        LazyColumn(
+        } else {
+            LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -250,6 +248,8 @@ fun SongListDetailScreen(
                     onToggleFavorite = { viewModel.toggleFavorite(song) }
                 )
             }
+        }
+
         }
 
     if (showAddDialog) {
