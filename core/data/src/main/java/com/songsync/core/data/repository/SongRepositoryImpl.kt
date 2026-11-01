@@ -2,6 +2,7 @@ package com.songsync.core.data.repository
 
 import android.net.Uri
 import com.songsync.core.data.local.db.dao.SongDao
+import com.songsync.core.data.metadata.MusicBrainzClient
 import com.songsync.core.data.mapper.toDomain
 import com.songsync.core.domain.model.Album
 import com.songsync.core.domain.model.Artist
@@ -19,7 +20,8 @@ import javax.inject.Singleton
 
 @Singleton
 class SongRepositoryImpl @Inject constructor(
-    private val songDao: SongDao
+    private val songDao: SongDao,
+    private val musicBrainzClient: MusicBrainzClient
 ) : SongRepository {
 
     override fun getSongs(sortOrder: SortOrder): Flow<List<Song>> {
@@ -149,6 +151,19 @@ class SongRepositoryImpl @Inject constructor(
             year = year,
             trackNumber = trackNumber
         )
+    }
+
+    override suspend fun enrichAlbumMetadata(albumId: Long): Boolean {
+        val sample = songDao.getAnySongForAlbum(albumId) ?: return false
+        val meta = musicBrainzClient.searchRelease(sample.artistName, sample.albumName) ?: return false
+        songDao.updateAlbumMetadata(
+            albumId = albumId,
+            albumName = meta.title,
+            artistName = meta.artist,
+            year = meta.year,
+            artUri = meta.coverArtUrl
+        )
+        return true
     }
 
     override suspend fun deleteSongs(songIds: List<Long>) {

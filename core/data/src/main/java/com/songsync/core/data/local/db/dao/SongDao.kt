@@ -97,6 +97,24 @@ interface SongDao {
 
     @Query("SELECT * FROM songs WHERE albumId = :albumId ORDER BY trackNumber ASC, title COLLATE NOCASE ASC")
     fun getSongsByAlbum(albumId: Long): Flow<List<SongEntity>>
+    @Query("SELECT * FROM songs WHERE albumId = :albumId LIMIT 1")
+    suspend fun getAnySongForAlbum(albumId: Long): SongEntity?
+
+    @Query("""
+        UPDATE songs
+        SET albumName = :albumName,
+            artistName = :artistName,
+            year = CASE WHEN :year > 0 THEN :year ELSE year END,
+            albumArtUriString = CASE WHEN :artUri IS NOT NULL AND :artUri != '' THEN :artUri ELSE albumArtUriString END
+        WHERE albumId = :albumId
+    """)
+    suspend fun updateAlbumMetadata(
+        albumId: Long,
+        albumName: String,
+        artistName: String,
+        year: Int,
+        artUri: String?
+    )
 
     @Query("""
         SELECT artistId, artistName, COUNT(*) as trackCount, COUNT(DISTINCT albumId) as albumCount 

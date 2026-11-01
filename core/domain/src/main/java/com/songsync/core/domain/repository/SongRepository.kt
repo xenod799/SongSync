@@ -28,6 +28,7 @@ interface SongRepository {
     fun search(query: String): Flow<List<Song>>
 
     suspend fun toggleFavorite(songId: Long, isFavorite: Boolean)
+    suspend fun enrichAlbumMetadata(albumId: Long): Boolean
     suspend fun recordSongPlay(songId: Long, playedAtMs: Long)
     suspend fun updateSongTags(
         songId: Long,

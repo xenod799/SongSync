@@ -23,6 +23,7 @@ import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
@@ -79,6 +82,8 @@ class SongListDetailViewModel @Inject constructor(
     private val type: String = savedStateHandle.get<String>("type") ?: DetailType.ALBUM
     private val key: String = savedStateHandle.get<String>("key") ?: ""
     val title: String = savedStateHandle.get<String>("title") ?: ""
+    val isAlbum: Boolean = type == DetailType.ALBUM
+    val albumId: Long = if (type == DetailType.ALBUM) (key.toLongOrNull() ?: -1L) else -1L
     val playlistId: Long = if (type == DetailType.PLAYLIST) (key.toLongOrNull() ?: -1L) else -1L
 
     val songs: StateFlow<List<Song>> = when (type) {
@@ -121,6 +126,14 @@ class SongListDetailViewModel @Inject constructor(
         playSong(list.random(), list)
     }
 
+    fun enrichAlbumMetadata(onResult: (Boolean) -> Unit) {
+        if (albumId <= 0) { onResult(false); return }
+        viewModelScope.launch {
+            val ok = songRepository.enrichAlbumMetadata(albumId)
+            onResult(ok)
+        }
+    }
+
     fun toggleFavorite(song: Song) {
         viewModelScope.launch {
             songRepository.toggleFavorite(song.id, !song.isFavorite)
@@ -137,6 +150,8 @@ fun SongListDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var isEnriching by remember { mutableStateOf(false) }
     val allSongs by viewModel.allSongs.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
@@ -176,6 +191,28 @@ fun SongListDetailScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
             actions = {
+                if (viewModel.isAlbum) {
+                    TextButton(
+                        onClick = {
+                            isEnriching = true
+                            viewModel.enrichAlbumMetadata { ok ->
+                                isEnriching = false
+                                Toast.makeText(
+                                    context,
+                                    if (ok) "Metadata updated" else "No metadata found",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        enabled = !isEnriching
+                    ) {
+                        if (isEnriching) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Fetch")
+                        }
+                    }
+                }
                 if (viewModel.playlistId > 0) {
                     IconButton(onClick = { showAddDialog = true }) {
                         Icon(
