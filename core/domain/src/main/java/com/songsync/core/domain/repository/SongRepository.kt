@@ -1,6 +1,7 @@
 package com.songsync.core.domain.repository
 
 import com.songsync.core.domain.model.Album
+import com.songsync.core.domain.model.ArtistProfile
 import com.songsync.core.domain.model.Artist
 import com.songsync.core.domain.model.Folder
 import com.songsync.core.domain.model.Genre
@@ -29,6 +30,7 @@ interface SongRepository {
 
     suspend fun toggleFavorite(songId: Long, isFavorite: Boolean)
     suspend fun enrichAlbumMetadata(albumId: Long): Boolean
+    suspend fun fetchArtistProfile(artistName: String): ArtistProfile?
     suspend fun recordSongPlay(songId: Long, playedAtMs: Long)
     suspend fun updateSongTags(
         songId: Long,

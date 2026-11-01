@@ -3,8 +3,10 @@ package com.songsync.core.data.repository
 import android.net.Uri
 import com.songsync.core.data.local.db.dao.SongDao
 import com.songsync.core.data.metadata.MusicBrainzClient
+import com.songsync.core.data.metadata.WikipediaClient
 import com.songsync.core.data.mapper.toDomain
 import com.songsync.core.domain.model.Album
+import com.songsync.core.domain.model.ArtistProfile
 import com.songsync.core.domain.model.Artist
 import com.songsync.core.domain.model.Folder
 import com.songsync.core.domain.model.Genre
@@ -21,7 +23,8 @@ import javax.inject.Singleton
 @Singleton
 class SongRepositoryImpl @Inject constructor(
     private val songDao: SongDao,
-    private val musicBrainzClient: MusicBrainzClient
+    private val musicBrainzClient: MusicBrainzClient,
+    private val wikipediaClient: WikipediaClient
 ) : SongRepository {
 
     override fun getSongs(sortOrder: SortOrder): Flow<List<Song>> {
@@ -164,6 +167,11 @@ class SongRepositoryImpl @Inject constructor(
             artUri = meta.coverArtUrl
         )
         return true
+    }
+
+    override suspend fun fetchArtistProfile(artistName: String): ArtistProfile? {
+        val p = wikipediaClient.fetchArtistProfile(artistName) ?: return null
+        return ArtistProfile(name = p.name, bio = p.bio, imageUrl = p.imageUrl)
     }
 
     override suspend fun deleteSongs(songIds: List<Long>) {

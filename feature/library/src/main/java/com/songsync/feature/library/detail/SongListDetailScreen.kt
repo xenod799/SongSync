@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
@@ -41,7 +42,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.platform.LocalContext
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
@@ -84,6 +90,7 @@ class SongListDetailViewModel @Inject constructor(
     private val key: String = savedStateHandle.get<String>("key") ?: ""
     val title: String = savedStateHandle.get<String>("title") ?: ""
     val isAlbum: Boolean = type == DetailType.ALBUM
+    val isArtist: Boolean = type == DetailType.ARTIST
     val albumId: Long = if (type == DetailType.ALBUM) (key.toLongOrNull() ?: -1L) else -1L
     val playlistId: Long = if (type == DetailType.PLAYLIST) (key.toLongOrNull() ?: -1L) else -1L
 
@@ -135,6 +142,13 @@ class SongListDetailViewModel @Inject constructor(
         }
     }
 
+    fun fetchArtistProfile(artistName: String, onResult: (com.songsync.core.domain.model.ArtistProfile?) -> Unit) {
+        viewModelScope.launch {
+            val profile = songRepository.fetchArtistProfile(artistName)
+            onResult(profile)
+        }
+    }
+
     fun toggleFavorite(song: Song) {
         viewModelScope.launch {
             songRepository.toggleFavorite(song.id, !song.isFavorite)
@@ -153,6 +167,8 @@ fun SongListDetailScreen(
     val context = LocalContext.current
     val songs by viewModel.songs.collectAsStateWithLifecycle()
     var isEnriching by remember { mutableStateOf(false) }
+    var artistProfile by remember { mutableStateOf<com.songsync.core.domain.model.ArtistProfile?>(null) }
+    var isFetchingProfile by remember { mutableStateOf(false) }
     val allSongs by viewModel.allSongs.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
@@ -225,6 +241,63 @@ fun SongListDetailScreen(
                 }
             }
         )
+
+        if (viewModel.isArtist) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                val profile = artistProfile
+                if (profile?.imageUrl != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context).data(profile.imageUrl).build(),
+                        contentDescription = profile.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(viewModel.title.take(1).uppercase(), style = MaterialTheme.typography.headlineMedium)
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(viewModel.title, style = MaterialTheme.typography.titleLarge)
+                if (profile != null && profile.bio.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(profile.bio, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(
+                    onClick = {
+                        isFetchingProfile = true
+                        viewModel.fetchArtistProfile(viewModel.title) { result ->
+                            isFetchingProfile = false
+                            artistProfile = result
+                            if (result == null) {
+                                Toast.makeText(context, "No profile found", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
+                    enabled = !isFetchingProfile
+                ) {
+                    if (isFetchingProfile) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Fetch artist profile")
+                    }
+                }
+            }
+        }
 
         if (viewModel.isAlbum) {
             Row(
