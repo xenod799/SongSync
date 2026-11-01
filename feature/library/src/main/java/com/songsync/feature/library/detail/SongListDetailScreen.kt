@@ -33,6 +33,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -149,8 +150,8 @@ fun SongListDetailScreen(
     onSongClick: (Song, List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val songs by viewModel.songs.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val songs by viewModel.songs.collectAsStateWithLifecycle()
     var isEnriching by remember { mutableStateOf(false) }
     val allSongs by viewModel.allSongs.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
@@ -224,6 +225,36 @@ fun SongListDetailScreen(
                 }
             }
         )
+
+        if (viewModel.isAlbum) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(
+                    onClick = {
+                        isEnriching = true
+                        viewModel.enrichAlbumMetadata { ok ->
+                            isEnriching = false
+                            Toast.makeText(
+                                context,
+                                if (ok) "Metadata updated" else "No metadata found",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    },
+                    enabled = !isEnriching
+                ) {
+                    if (isEnriching) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Fetch metadata")
+                    }
+                }
+            }
+        }
 
         if (songs.isEmpty()) {
             Box(
