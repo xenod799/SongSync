@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -96,8 +97,19 @@ fun SongSyncNavGraph(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val playbackState by playerViewModel.playbackState.collectAsState()
+    val playbackStateState = playerViewModel.playbackState.collectAsState()
+    val playbackState by playbackStateState
     val currentLyrics by playerViewModel.currentLyrics.collectAsState()
+    val playlists by playerViewModel.playlists.collectAsState()
+    val userSettings by settingsViewModel.settings.collectAsState()
+
+    // The playback state also emits every 100 ms for the seek bar. Deriving the
+    // queue and song fields keeps those ticks from recomposing the whole graph
+    // (and with it the queue sheet) ten times per second.
+    val queue by remember { derivedStateOf { playbackStateState.value.queue } }
+    val queueIndex by remember { derivedStateOf { playbackStateState.value.currentQueueIndex } }
+    val currentSong by remember { derivedStateOf { playbackStateState.value.currentSong } }
+    val hasCurrentSong by remember { derivedStateOf { playbackStateState.value.currentSong != null } }
 
     var showNowPlaying by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }
@@ -152,6 +164,7 @@ fun SongSyncNavGraph(
                         if (playbackState.currentSong != null && !showNowPlaying) {
                             MiniPlayer(
                                 playbackState = playbackState,
+                                style = userSettings.miniPlayerStyle,
                                 onExpandNowPlaying = { showNowPlaying = true },
                                 onTogglePlayPause = { playerViewModel.togglePlayPause() },
                                 onPrevious = { playerViewModel.skipToPrevious() },
@@ -300,7 +313,7 @@ fun SongSyncNavGraph(
 
         // Now Playing Fullscreen Overlay
         AnimatedVisibility(
-            visible = showNowPlaying && playbackState.currentSong != null,
+            visible = showNowPlaying && hasCurrentSong,
             enter = slideInVertically(initialOffsetY = { it }),
             exit = slideOutVertically(targetOffsetY = { it })
         ) {
@@ -318,24 +331,31 @@ fun SongSyncNavGraph(
         // Bottom Sheets
         if (showQueue) {
             QueueBottomSheet(
-                queue = playbackState.queue,
-                currentIndex = playbackState.currentQueueIndex,
+                queue = queue,
+                currentIndex = queueIndex,
+                playlists = playlists,
                 onSongSelected = { index ->
-                    playbackState.queue.getOrNull(index)?.let { song ->
-                        playerViewModel.playSong(song, playbackState.queue)
+                    queue.getOrNull(index)?.let { song ->
+                        playerViewModel.playSong(song, queue)
                     }
                 },
                 onRemoveFromQueue = { index ->
                     playerViewModel.playerConnection.removeFromQueue(index)
                 },
+                onInsertIntoQueue = { song, index ->
+                    playerViewModel.playerConnection.insertIntoQueue(song, index)
+                },
                 onReorderQueue = { from, to ->
                     playerViewModel.playerConnection.reorderQueue(from, to)
                 },
-                onClearQueue = {
-                    playerViewModel.playerConnection.clearQueue()
+                onAddSongsToPlaylist = { playlistId, songIds ->
+                    playerViewModel.addSongsToPlaylist(playlistId, songIds)
                 },
                 onSaveAsPlaylist = { name ->
                     playerViewModel.saveQueueAsPlaylist(name)
+                },
+                onClearQueue = {
+                    playerViewModel.playerConnection.clearQueue()
                 },
                 onDismiss = { showQueue = false }
             )
@@ -351,9 +371,9 @@ fun SongSyncNavGraph(
             )
         }
 
-        if (showSongInfo && playbackState.currentSong != null) {
+        if (showSongInfo && currentSong != null) {
             SongInfoBottomSheet(
-                song = playbackState.currentSong!!,
+                song = currentSong!!,
                 onDismiss = { showSongInfo = false }
             )
         }
@@ -376,8 +396,10 @@ fun SongSyncNavGraph(
             TagEditorBottomSheet(
                 song = song,
                 onDismissRequest = { tagEditorSong = null },
-                onTagsUpdated = {
-                    libraryViewModel.refreshLibrary()
+                onTagsUpdated = { title, artist, album, genre, year, trackNumber ->
+                    libraryViewModel.updateSongTags(
+                        song.id, title, artist, album, genre, year, trackNumber
+                    )
                 }
             )
         }

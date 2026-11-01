@@ -47,6 +47,7 @@ class MediaStoreScanner @Inject constructor(
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TRACK,
             MediaStore.Audio.Media.YEAR,
+            MediaStore.Audio.Media.GENRE,
             MediaStore.Audio.Media.MIME_TYPE,
             MediaStore.Audio.Media.SIZE,
             MediaStore.Audio.Media.DATE_ADDED,
@@ -83,6 +84,7 @@ class MediaStoreScanner @Inject constructor(
             val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
             val trackCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
             val yearCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR)
+            val genreCol = cursor.getColumnIndex(MediaStore.Audio.Media.GENRE)
             val mimeTypeCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
             val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
             val dateAddedCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
@@ -120,6 +122,7 @@ class MediaStoreScanner @Inject constructor(
                 val duration = cursor.getLong(durationCol)
                 val track = cursor.getInt(trackCol)
                 val year = cursor.getInt(yearCol)
+                val mediaGenre = if (genreCol >= 0) cursor.getString(genreCol) else null
                 val mimeType = cursor.getString(mimeTypeCol) ?: "audio/mpeg"
                 val size = cursor.getLong(sizeCol)
                 val dateAdded = cursor.getLong(dateAddedCol)
@@ -130,7 +133,10 @@ class MediaStoreScanner @Inject constructor(
                     albumId
                 )
 
-                val (replayGainGain, replayGainPeak, genre, bitrate, sampleRate) = readAudioExtras(dataPath)
+                val extras = readAudioExtras(dataPath)
+                val genre = mediaGenre?.takeIf { it.isNotBlank() } ?: extras.genre
+                val bitrate = extras.bitrate
+                val sampleRate = extras.sampleRate
 
                 val songEntity = SongEntity(
                     id = existing?.id ?: 0L,
@@ -155,9 +161,7 @@ class MediaStoreScanner @Inject constructor(
                     dateModifiedSec = dateModified,
                     isFavorite = existing?.isFavorite ?: false,
                     playCount = existing?.playCount ?: 0,
-                    lastPlayedTimestampMs = existing?.lastPlayedTimestampMs ?: 0L,
-                    replayGainTrackGainDb = replayGainGain,
-                    replayGainTrackPeak = replayGainPeak
+                    lastPlayedTimestampMs = existing?.lastPlayedTimestampMs ?: 0L
                 )
 
                 songsToInsert.add(songEntity)
@@ -183,21 +187,17 @@ class MediaStoreScanner @Inject constructor(
         return@withContext songsToInsert.size
     }
 
-    private data class AudioExtras(
-        val replayGainGain: Float?,
-        val replayGainPeak: Float?,
+    private data class AudioMetadata(
         val genre: String?,
         val bitrate: Int,
         val sampleRate: Int
     )
 
-    private fun readAudioExtras(filePath: String): AudioExtras {
+    private fun readAudioExtras(filePath: String): AudioMetadata {
         val retriever = MediaMetadataRetriever()
         var genre: String? = null
         var bitrate = 0
         var sampleRate = 44100
-        var trackGain: Float? = null
-        var trackPeak: Float? = null
 
         try {
             retriever.setDataSource(filePath)
@@ -207,15 +207,13 @@ class MediaStoreScanner @Inject constructor(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 sampleRate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)?.toIntOrNull() ?: 44100
             }
-
-            // ReplayGain tag comments are not exposed by MediaMetadataRetriever; skip extraction
         } catch (_: Exception) {
             // Unreadable or corrupted audio file
         } finally {
             try { retriever.release() } catch (_: Exception) {}
         }
 
-        return AudioExtras(trackGain, trackPeak, genre, bitrate, sampleRate)
+        return AudioMetadata(genre, bitrate, sampleRate)
     }
 
     }

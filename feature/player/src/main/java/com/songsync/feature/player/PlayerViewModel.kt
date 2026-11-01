@@ -12,6 +12,7 @@ import androidx.palette.graphics.Palette
 import androidx.media3.common.PlaybackParameters
 import com.songsync.core.domain.model.ArtShape
 import com.songsync.core.domain.model.Lyrics
+import com.songsync.core.domain.model.Playlist
 import com.songsync.core.domain.model.Song
 import com.songsync.core.domain.repository.LyricsRepository
 import com.songsync.core.domain.repository.PlaylistRepository
@@ -82,6 +83,14 @@ class PlayerViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = com.songsync.core.domain.model.UserSettings()
     )
+
+    /** Playlists offered by the queue sheet's "Add to playlist" action. */
+    val playlists: StateFlow<List<Playlist>> = playlistRepository.getPlaylists()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     init {
         observeCurrentSong()
@@ -157,6 +166,13 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             val playlistId = playlistRepository.createPlaylist(name.trim())
             playlistRepository.addSongsToPlaylist(playlistId, queue.map { it.id })
+        }
+    }
+
+    fun addSongsToPlaylist(playlistId: Long, songIds: List<Long>) {
+        if (songIds.isEmpty()) return
+        viewModelScope.launch {
+            playlistRepository.addSongsToPlaylist(playlistId, songIds)
         }
     }
 

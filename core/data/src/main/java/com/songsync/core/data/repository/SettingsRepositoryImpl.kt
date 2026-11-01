@@ -6,6 +6,7 @@ import com.songsync.core.data.local.db.dao.SongDao
 import com.songsync.core.data.local.db.entity.PlaylistEntity
 import com.songsync.core.data.local.db.entity.PlaylistSongCrossRef
 import com.songsync.core.domain.model.ArtShape
+import com.songsync.core.domain.model.MiniPlayerStyle
 import com.songsync.core.domain.model.ColorPalette
 import com.songsync.core.domain.model.ThemeMode
 import com.songsync.core.domain.model.UserSettings
@@ -71,6 +72,7 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setPlaybackPitch(pitch: Float) = dataStore.setPlaybackPitch(pitch)
     override suspend fun setLyricsTextSizeSp(sizeSp: Int) = dataStore.setLyricsTextSizeSp(sizeSp)
     override suspend fun setLyricsDefaultOffsetMs(offsetMs: Long) = dataStore.setLyricsDefaultOffsetMs(offsetMs)
+    override suspend fun setMiniPlayerStyle(style: MiniPlayerStyle) = dataStore.setMiniPlayerStyle(style)
     override suspend fun setOnboardingCompleted(completed: Boolean) = dataStore.setOnboardingCompleted(completed)
 
     override suspend fun exportBackupJson(): String {

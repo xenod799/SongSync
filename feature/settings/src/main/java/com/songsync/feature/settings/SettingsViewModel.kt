@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.songsync.core.domain.model.ArtShape
 import com.songsync.core.domain.model.ColorPalette
+import com.songsync.core.domain.model.MiniPlayerStyle
 import com.songsync.core.domain.model.ThemeMode
 import com.songsync.core.domain.model.UserSettings
 import com.songsync.core.domain.repository.SettingsRepository
@@ -54,6 +55,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setArtShape(shape: ArtShape) = viewModelScope.launch {
         settingsRepository.setArtShape(shape)
+    }
+    
+    fun setMiniPlayerStyle(style: MiniPlayerStyle) = viewModelScope.launch {
+        settingsRepository.setMiniPlayerStyle(style)
     }
 
     fun setAnimateArtPulse(animate: Boolean) = viewModelScope.launch {

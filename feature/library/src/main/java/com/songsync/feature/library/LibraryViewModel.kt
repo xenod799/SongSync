@@ -170,6 +170,20 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    fun updateSongTags(
+        songId: Long,
+        title: String,
+        artist: String,
+        album: String,
+        genre: String?,
+        year: Int,
+        trackNumber: Int
+    ) {
+        viewModelScope.launch {
+            songRepository.updateSongTags(songId, title, artist, album, genre, year, trackNumber)
+        }
+    }
+
     fun refreshLibrary() {
         viewModelScope.launch {
             _isScanning.value = true

@@ -38,6 +38,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import com.songsync.core.domain.model.MiniPlayerStyle
+import com.songsync.core.domain.model.UserSettings
 import com.songsync.core.ui.component.ExpressiveMusicNotePlaceholder
 import com.songsync.core.ui.theme.ListArtShape
 import com.songsync.media.player.PlaybackState
@@ -45,6 +47,7 @@ import com.songsync.media.player.PlaybackState
 @Composable
 fun MiniPlayer(
     playbackState: PlaybackState,
+    style: MiniPlayerStyle = MiniPlayerStyle.BAR,
     onExpandNowPlaying: () -> Unit,
     onTogglePlayPause: () -> Unit,
     onPrevious: () -> Unit,
@@ -58,6 +61,45 @@ fun MiniPlayer(
         (playbackState.currentPositionMs.toFloat() / playbackState.durationMs.toFloat()).coerceIn(0f, 1f)
     } else 0f
 
+    when (style) {
+        MiniPlayerStyle.BAR -> MiniPlayerBar(
+            playbackState = playbackState,
+            currentSong = currentSong,
+            context = context,
+            shadowColor = shadowColor,
+            progress = progress,
+            onExpandNowPlaying = onExpandNowPlaying,
+            onTogglePlayPause = onTogglePlayPause,
+            onPrevious = onPrevious,
+            onNext = onNext,
+            modifier = modifier
+        )
+        MiniPlayerStyle.BLOB -> MiniPlayerBlob(
+            playbackState = playbackState,
+            currentSong = currentSong,
+            context = context,
+            shadowColor = shadowColor,
+            progress = progress,
+            onExpandNowPlaying = onExpandNowPlaying,
+            onTogglePlayPause = onTogglePlayPause,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun MiniPlayerBar(
+    playbackState: PlaybackState,
+    currentSong: com.songsync.core.domain.model.Song,
+    context: android.content.Context,
+    shadowColor: Color,
+    progress: Float,
+    onExpandNowPlaying: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    modifier: Modifier
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -81,7 +123,6 @@ fun MiniPlayer(
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Artwork 16dp rounded
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -105,7 +146,6 @@ fun MiniPlayer(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Title marquee and Artist
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = currentSong.title,
@@ -123,7 +163,6 @@ fun MiniPlayer(
                     )
                 }
 
-                // Previous Button
                 IconButton(
                     onClick = onPrevious,
                     modifier = Modifier
@@ -140,7 +179,6 @@ fun MiniPlayer(
 
                 Spacer(modifier = Modifier.width(4.dp))
 
-                // Play / Pause Button
                 IconButton(
                     onClick = onTogglePlayPause,
                     modifier = Modifier
@@ -158,7 +196,6 @@ fun MiniPlayer(
 
                 Spacer(modifier = Modifier.width(4.dp))
 
-                // Next Button
                 IconButton(
                     onClick = onNext,
                     modifier = Modifier
@@ -174,12 +211,118 @@ fun MiniPlayer(
                 }
             }
 
-            // Slim progress bar at bottom of mini player
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(3.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = Color.Transparent
+            )
+        }
+    }
+}
+
+@Composable
+private fun MiniPlayerBlob(
+    playbackState: PlaybackState,
+    currentSong: com.songsync.core.domain.model.Song,
+    context: android.content.Context,
+    shadowColor: Color,
+    progress: Float,
+    onExpandNowPlaying: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    modifier: Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        contentAlignment = Alignment.CenterEnd
+    ) {
+        Box(
+            modifier = Modifier
+                .width(232.dp)
+                .height(64.dp)
+                .shadow(
+                    elevation = 8.dp,
+                    shape = RoundedCornerShape(32.dp),
+                    ambientColor = shadowColor,
+                    spotColor = shadowColor
+                )
+                .clip(RoundedCornerShape(32.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .clickable(onClick = onExpandNowPlaying)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Artwork sits in the corner of the blob
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (currentSong.albumArtUri != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(currentSong.albumArtUri)
+                                .build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        ExpressiveMusicNotePlaceholder(modifier = Modifier.fillMaxSize())
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = currentSong.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = currentSong.artistName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                IconButton(
+                    onClick = onTogglePlayPause,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Icon(
+                        imageVector = if (playbackState.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                        contentDescription = if (playbackState.isPlaying) "Pause" else "Play",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .align(Alignment.BottomCenter),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = Color.Transparent
             )

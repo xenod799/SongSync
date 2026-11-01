@@ -1,4 +1,4 @@
-package com.songsync.media
+package com.songsync.media.player
 
 import com.songsync.media.player.EqualizerBand
 import com.songsync.media.player.EqualizerManager

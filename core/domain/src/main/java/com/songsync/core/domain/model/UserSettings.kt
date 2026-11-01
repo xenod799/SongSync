@@ -22,6 +22,11 @@ enum class ArtShape {
     SOFT_BURST
 }
 
+enum class MiniPlayerStyle {
+    BAR,
+    BLOB
+}
+
 data class UserSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val palette: ColorPalette = ColorPalette.PEACH_POP,
@@ -39,5 +44,6 @@ data class UserSettings(
     val playbackPitch: Float = 1.0f,
     val lyricsTextSizeSp: Int = 18,
     val lyricsDefaultOffsetMs: Long = 0L,
+    val miniPlayerStyle: MiniPlayerStyle = MiniPlayerStyle.BAR,
     val onboardingCompleted: Boolean = false
 )

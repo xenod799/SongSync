@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.songsync.core.domain.model.ArtShape
 import com.songsync.core.domain.model.ColorPalette
+import com.songsync.core.domain.model.MiniPlayerStyle
 import com.songsync.core.domain.model.ThemeMode
 import com.songsync.core.ui.theme.CardContainerShape
 import com.songsync.core.ui.theme.Cookie9SidedShape
@@ -179,6 +180,30 @@ fun SettingsScreen(
                         checked = settings.useDynamicColor,
                         onCheckedChange = viewModel::setDynamicColor
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("Mini Player Style", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MiniPlayerStyle.entries.forEach { style ->
+                    val isSelected = settings.miniPlayerStyle == style
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(PillShape)
+                            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .clickable { viewModel.setMiniPlayerStyle(style) }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = style.name.lowercase().replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
 

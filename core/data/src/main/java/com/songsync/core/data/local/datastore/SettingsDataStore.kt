@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.songsync.core.domain.model.ArtShape
 import com.songsync.core.domain.model.ColorPalette
+import com.songsync.core.domain.model.MiniPlayerStyle
 import com.songsync.core.domain.model.ThemeMode
 import com.songsync.core.domain.model.UserSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -44,6 +45,7 @@ class SettingsDataStore @Inject constructor(
         val PLAYBACK_PITCH = floatPreferencesKey("playback_pitch")
         val LYRICS_TEXT_SIZE_SP = intPreferencesKey("lyrics_text_size_sp")
         val LYRICS_DEFAULT_OFFSET_MS = longPreferencesKey("lyrics_default_offset_ms")
+    val MINI_PLAYER_STYLE = stringPreferencesKey("mini_player_style")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
@@ -65,6 +67,7 @@ class SettingsDataStore @Inject constructor(
             playbackPitch = prefs[Keys.PLAYBACK_PITCH] ?: 1.0f,
             lyricsTextSizeSp = prefs[Keys.LYRICS_TEXT_SIZE_SP] ?: 18,
             lyricsDefaultOffsetMs = prefs[Keys.LYRICS_DEFAULT_OFFSET_MS] ?: 0L,
+            miniPlayerStyle = MiniPlayerStyle.valueOf(prefs[Keys.MINI_PLAYER_STYLE] ?: MiniPlayerStyle.BAR.name),
             onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: false
         )
     }
@@ -131,6 +134,10 @@ class SettingsDataStore @Inject constructor(
 
     suspend fun setLyricsDefaultOffsetMs(offsetMs: Long) {
         context.dataStore.edit { it[Keys.LYRICS_DEFAULT_OFFSET_MS] = offsetMs }
+    }
+
+    suspend fun setMiniPlayerStyle(style: MiniPlayerStyle) {
+        context.dataStore.edit { it[Keys.MINI_PLAYER_STYLE] = style.name }
     }
 
     suspend fun setOnboardingCompleted(completed: Boolean) {

@@ -245,6 +245,21 @@ class PlayerConnection @Inject constructor(
         _playbackState.update { it.copy(queue = currentQueueSongs.toList()) }
     }
 
+    /** Re-inserts a song at [index], used to restore a removed queue item. */
+    fun insertIntoQueue(song: Song, index: Int) {
+        val controller = mediaController ?: return
+        val insertIndex = index.coerceIn(0, currentQueueSongs.size)
+        currentQueueSongs.add(insertIndex, song)
+        controller.addMediaItem(insertIndex, song.toMediaItem())
+
+        _playbackState.update {
+            it.copy(
+                queue = currentQueueSongs.toList(),
+                currentQueueIndex = controller.currentMediaItemIndex
+            )
+        }
+    }
+
     fun togglePlayPause() {
         val controller = mediaController ?: return
         if (controller.isPlaying) {

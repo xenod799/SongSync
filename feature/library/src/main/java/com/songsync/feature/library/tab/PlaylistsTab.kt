@@ -165,7 +165,7 @@ fun PlaylistsTab(
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 24.dp, bottom = 100.dp)
+                .padding(end = 24.dp, bottom = 16.dp)
         ) {
             Icon(imageVector = Icons.Rounded.Add, contentDescription = "Create Playlist")
         }

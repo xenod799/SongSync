@@ -57,7 +57,7 @@ import kotlinx.coroutines.withContext
 fun TagEditorBottomSheet(
     song: Song,
     onDismissRequest: () -> Unit,
-    onTagsUpdated: () -> Unit,
+    onTagsUpdated: (String, String, String, String?, Int, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -97,7 +97,14 @@ fun TagEditorBottomSheet(
                     context.contentResolver.update(uri, values, null, null)
                 }
                 statusMessage = "Tags updated successfully"
-                onTagsUpdated()
+                onTagsUpdated(
+                    title.trim(),
+                    artist.trim(),
+                    album.trim(),
+                    genre.trim().ifBlank { null },
+                    year.toIntOrNull() ?: 0,
+                    trackNumber.toIntOrNull() ?: 0
+                )
                 onDismissRequest()
             } catch (e: Exception) {
                 statusMessage = "Failed to update tags: ${e.localizedMessage}"

@@ -1,4 +1,4 @@
-package com.songsync.core.data
+package com.songsync.core.data.repository
 
 import android.net.Uri
 import com.songsync.core.data.local.db.dao.SongDao

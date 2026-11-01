@@ -1,6 +1,7 @@
 package com.songsync.core.domain.repository
 
 import com.songsync.core.domain.model.ArtShape
+import com.songsync.core.domain.model.MiniPlayerStyle
 import com.songsync.core.domain.model.ColorPalette
 import com.songsync.core.domain.model.ThemeMode
 import com.songsync.core.domain.model.UserSettings
@@ -25,6 +26,7 @@ interface SettingsRepository {
     suspend fun setPlaybackPitch(pitch: Float)
     suspend fun setLyricsTextSizeSp(sizeSp: Int)
     suspend fun setLyricsDefaultOffsetMs(offsetMs: Long)
+    suspend fun setMiniPlayerStyle(style: MiniPlayerStyle)
     suspend fun setOnboardingCompleted(completed: Boolean)
 
     suspend fun exportBackupJson(): String
