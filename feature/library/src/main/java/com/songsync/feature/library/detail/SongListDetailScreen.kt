@@ -1,28 +1,40 @@
 package com.songsync.feature.library.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +45,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.songsync.core.domain.model.Song
+import com.songsync.core.domain.model.SortBy
+import com.songsync.core.domain.model.SortOrder
 import com.songsync.core.domain.repository.PlaylistRepository
 import com.songsync.core.domain.repository.SongRepository
 import com.songsync.core.ui.component.ExpressiveMusicNotePlaceholder
@@ -65,6 +79,7 @@ class SongListDetailViewModel @Inject constructor(
     private val type: String = savedStateHandle.get<String>("type") ?: DetailType.ALBUM
     private val key: String = savedStateHandle.get<String>("key") ?: ""
     val title: String = savedStateHandle.get<String>("title") ?: ""
+    val playlistId: Long = if (type == DetailType.PLAYLIST) (key.toLongOrNull() ?: -1L) else -1L
 
     val songs: StateFlow<List<Song>> = when (type) {
         DetailType.ALBUM -> songRepository.getAlbumSongs(key.toLongOrNull() ?: -1L)
@@ -78,6 +93,16 @@ class SongListDetailViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
+
+    val allSongs: StateFlow<List<Song>> = songRepository.getSongs(SortOrder(SortBy.TITLE, true))
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = emptyList())
+
+    fun addSongsToPlaylist(songIds: List<Long>) {
+        if (playlistId <= 0 || songIds.isEmpty()) return
+        viewModelScope.launch {
+            playlistRepository.addSongsToPlaylist(playlistId, songIds)
+        }
+    }
 
     fun playSong(song: Song, queue: List<Song>) {
         playerConnection.playSong(song, queue)
@@ -112,6 +137,9 @@ fun SongListDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val allSongs by viewModel.allSongs.collectAsStateWithLifecycle()
+    var showAddDialog by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 
     Column(
         modifier = modifier
@@ -146,7 +174,18 @@ fun SongListDetailScreen(
             },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.surface
-            )
+            ),
+            actions = {
+                if (viewModel.playlistId > 0) {
+                    IconButton(onClick = { showAddDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = "Add songs",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
         )
 
         if (songs.isEmpty()) {
@@ -212,5 +251,58 @@ fun SongListDetailScreen(
                 )
             }
         }
+
+    if (showAddDialog) {
+        val existingIds = songs.map { it.id }.toSet()
+        val available = allSongs.filter { it.id !in existingIds }
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("Add songs to playlist") },
+            text = {
+                if (available.isEmpty()) {
+                    Text("All songs are already in this playlist.")
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                        items(available, key = { it.id }) { song ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedIds = if (selectedIds.contains(song.id)) selectedIds - song.id else selectedIds + song.id
+                                    }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = selectedIds.contains(song.id),
+                                    onCheckedChange = { checked ->
+                                        selectedIds = if (checked) selectedIds + song.id else selectedIds - song.id
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(song.artistName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.addSongsToPlaylist(selectedIds.toList())
+                        selectedIds = emptySet()
+                        showAddDialog = false
+                    },
+                    enabled = selectedIds.isNotEmpty()
+                ) { Text("Add") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
     }
 }
